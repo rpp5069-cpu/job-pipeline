@@ -42,7 +42,15 @@ else:
         media = MediaFileUpload(fpath, mimetype=mime, resumable=True)
         
         try:
-            f = service.files().create(body=meta, media_body=media, fields='id').execute()
+            # supportsAllDrives=True is necessary for service accounts uploading to shared spaces
+            f = service.files().create(
+                body=meta, 
+                media_body=media, 
+                fields='id', 
+                supportsAllDrives=True
+            ).execute()
             print(f'✅ Uploaded {fname} → ID: {f.get("id")}')
         except Exception as e:
             print(f'❌ Failed to upload {fname}: {e}')
+            if "storageQuotaExceeded" in str(e):
+                print("💡 Tip: Service accounts have no quota. If this is 'My Drive', try using a 'Shared Drive' instead.")
