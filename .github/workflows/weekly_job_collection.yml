@@ -43,9 +43,14 @@ jobs:
         run: |
           mkdir -p job_outputs job_work
           papermill CS_MBA_AI_USAJobs_Jooble_Master_Combiner.ipynb \
-            executed_notebook.ipynb \
+            ./executed_notebook.ipynb \
             --no-progress-bar \
             -p DRIVE_BASE job_outputs
+
+      - name: Verify execution output
+        run: |
+          ls -la
+          test -f ./executed_notebook.ipynb || echo "FILE NOT FOUND"
 
       - name: Upload outputs to Google Drive
         env:
@@ -57,4 +62,4 @@ jobs:
         if: always()
         with:
           name: executed-notebook-${{ github.run_id }}
-          path: executed_notebook.ipynb
+          path: ./executed_notebook.ipynb
