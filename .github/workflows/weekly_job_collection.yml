@@ -33,7 +33,7 @@ jobs:
       - id: 'auth'
         uses: 'google-github-actions/auth@v2'
         with:
-          workload_identity_provider: 'projects/$(gcloud projects describe ${{ secrets.GCP_PROJECT_ID }} --format="value(projectNumber)")/locations/global/workloadIdentityPools/github-pool/providers/github-provider'
+          workload_identity_provider: 'projects/${{ steps.get_project_number.outputs.PROJECT_NUMBER }}/locations/global/workloadIdentityPools/github-pool/providers/github-provider'
           service_account: 'github-pipeline@${{ secrets.GCP_PROJECT_ID }}.iam.gserviceaccount.com'
 
       # Now that gcloud is installed AND authenticated, get the project number
