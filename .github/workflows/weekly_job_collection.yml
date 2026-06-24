@@ -29,6 +29,9 @@ jobs:
       - name: 'Set up Cloud SDK'
         uses: 'google-github-actions/setup-gcloud@v2'
 
+      - name: List Repository Files (Debug)
+        run: ls -R
+
       - name: Install dependencies
         run: |
           pip install papermill pandas openpyxl requests beautifulsoup4 tqdm \
@@ -42,14 +45,12 @@ jobs:
           JOOBLE_KEY: ${{ secrets.JOOBLE_KEY }}
         run: |
           mkdir -p job_outputs job_work
-          papermill CS_MBA_AI_USAJobs_Jooble_Master_Combiner.ipynb \
+          # Using the filename provided by user
+          papermill "CS_MBA_AI_USAJobs_Jooble_Master_Combiner_v3_(2).ipynb" \
             ./executed_notebook.ipynb \
             --log-output \
             --no-progress-bar \
             -p DRIVE_BASE job_outputs
-
-      - name: Debug - List all files
-        run: ls -R
 
       - name: Upload outputs to Google Drive
         env:
