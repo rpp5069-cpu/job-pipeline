@@ -18,7 +18,7 @@ jobs:
       - uses: actions/setup-python@v5
         with: { python-version: '3.11' }
 
-      # Install gcloud CLI (does not authenticate for WIF)
+      # Install gcloud CLI. This action sets up the gcloud environment.
       - uses: google-github-actions/setup-gcloud@v2
         with:
           project_id: ${{ secrets.GCP_PROJECT_ID }}
@@ -29,19 +29,13 @@ jobs:
             jupyter nbconvert google-auth google-auth-oauthlib \
             google-api-python-client
 
-      # Add Google Cloud authentication step (authenticates gcloud for WIF)
+      # Authenticate with Google Cloud using Workload Identity Federation.
+      # Uses the new GCP_PROJECT_NUMBER secret for the workload_identity_provider.
       - id: 'auth'
         uses: 'google-github-actions/auth@v2'
         with:
-          workload_identity_provider: 'projects/${{ steps.get_project_number.outputs.PROJECT_NUMBER }}/locations/global/workloadIdentityPools/github-pool/providers/github-provider'
+          workload_identity_provider: 'projects/${{ secrets.GCP_PROJECT_NUMBER }}/locations/global/workloadIdentityPools/github-pool/providers/github-provider'
           service_account: 'github-pipeline@${{ secrets.GCP_PROJECT_ID }}.iam.gserviceaccount.com'
-
-      # Now that gcloud is installed AND authenticated, get the project number
-      - name: Get GCP Project Number
-        id: get_project_number
-        run: |
-          echo "PROJECT_NUMBER=$(gcloud projects describe ${{ secrets.GCP_PROJECT_ID }} --format='value(projectNumber)')" >> "$GITHUB_OUTPUT"
-        shell: bash # Explicitly use bash for shell command substitution
 
       - name: Execute notebook
         env:
