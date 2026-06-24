@@ -18,24 +18,22 @@ jobs:
       - uses: actions/setup-python@v5
         with: { python-version: '3.11' }
 
-      # Install gcloud CLI. This action sets up the gcloud environment.
-      - uses: google-github-actions/setup-gcloud@v2
+      # 1. Authenticate via Workload Identity Federation
+      - id: 'auth'
+        uses: 'google-github-actions/auth@v2'
         with:
-          project_id: ${{ secrets.GCP_PROJECT_ID }}
+          workload_identity_provider: 'projects/71023542519/locations/global/workloadIdentityPools/github-pool/providers/github-provider-v2'
+          service_account: 'github-pipeline@project-bf62429c-050a-4ead-b92.iam.gserviceaccount.com'
+
+      # 2. Setup gcloud CLI
+      - name: 'Set up Cloud SDK'
+        uses: 'google-github-actions/setup-gcloud@v2'
 
       - name: Install dependencies
         run: |
           pip install papermill pandas openpyxl requests beautifulsoup4 tqdm \
             jupyter nbconvert google-auth google-auth-oauthlib \
             google-api-python-client
-
-      # Authenticate with Google Cloud using Workload Identity Federation.
-      # Uses the new GCP_PROJECT_NUMBER secret for the workload_identity_provider.
-      - id: 'auth'
-        uses: 'google-github-actions/auth@v2'
-        with:
-          workload_identity_provider: 'projects/71023542519/locations/global/workloadIdentityPools/github-pool/providers/github-provider-v2'
-          service_account: 'github-pipeline@project-bf62429c-050a-4ead-b92.iam.gserviceaccount.com'
 
       - name: Execute notebook
         env:
@@ -50,7 +48,6 @@ jobs:
             -p DRIVE_BASE /tmp/job_outputs
 
       - name: Upload outputs to Google Drive
-        # GDRIVE_SERVICE_ACCOUNT_JSON is no longer needed; authentication is via Workload Identity
         env:
           GDRIVE_FOLDER_ID: ${{ secrets.GDRIVE_FOLDER_ID }}
         run: python upload_to_drive.py
@@ -60,4 +57,3 @@ jobs:
         with:
           name: executed-notebook-${{ github.run_id }}
           path: /tmp/executed_notebook.ipynb
-          retention-days: 14
