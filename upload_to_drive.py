@@ -9,7 +9,7 @@ service = build('drive', 'v3', credentials=creds)
 folder = os.environ['GDRIVE_FOLDER_ID'] # This secret is still needed
 
 output_dir = '/tmp/job_outputs/outputs'
-if not os.path.isdir(output_dir):
+if not os.path.isdir(output_dir): # Corrected: os.path() was incorrect
     output_dir = '/tmp/job_outputs'
 
 for fname in os.listdir(output_dir):
