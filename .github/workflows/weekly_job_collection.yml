@@ -17,17 +17,31 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with: { python-version: '3.11' }
+
+      # Install gcloud CLI for the 'Get GCP Project Number' step
+      - uses: google-github-actions/setup-gcloud@v2
+        with:
+          project_id: ${{ secrets.GCP_PROJECT_ID }}
+          install_components: 'gcloud'
+
       - name: Install dependencies
         run: |
           pip install papermill pandas openpyxl requests beautifulsoup4 tqdm \
             jupyter nbconvert google-auth google-auth-oauthlib \
             google-api-python-client
 
+      # Add a step to get the GCP Project Number
+      - name: Get GCP Project Number
+        id: get_project_number
+        run: |
+          echo "PROJECT_NUMBER=$(gcloud projects describe ${{ secrets.GCP_PROJECT_ID }} --format='value(projectNumber)')" >> "$GITHUB_OUTPUT"
+        shell: bash # Explicitly use bash for shell command substitution
+
       # Add Google Cloud authentication step
       - id: 'auth'
         uses: 'google-github-actions/auth@v2'
         with:
-          workload_identity_provider: 'projects/$(gcloud projects describe ${{ secrets.GCP_PROJECT_ID }} --format="value(projectNumber)")/locations/global/workloadIdentityPools/github-pool/providers/github-provider'
+          workload_identity_provider: 'projects/${{ steps.get_project_number.outputs.PROJECT_NUMBER }}/locations/global/workloadIdentityPools/github-pool/providers/github-provider'
           service_account: 'github-pipeline@${{ secrets.GCP_PROJECT_ID }}.iam.gserviceaccount.com'
 
       - name: Execute notebook
