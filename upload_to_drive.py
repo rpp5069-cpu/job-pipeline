@@ -1,26 +1,48 @@
 import os, json
 from googleapiclient.discovery import build
 from googleapiclient.http import MediaFileUpload
-from google.auth import default # Import default credentials
+from google.auth import default
 
 # Use default credentials provided by Workload Identity Federation
 creds, project = default()
 service = build('drive', 'v3', credentials=creds)
-folder = os.environ['GDRIVE_FOLDER_ID'] # This secret is still needed
 
-output_dir = '/tmp/job_outputs/outputs'
-if not os.path.isdir(output_dir): # Corrected: os.path() was incorrect
-    output_dir = '/tmp/job_outputs'
+# Your target Drive Folder ID
+folder = os.environ.get('GDRIVE_FOLDER_ID', '1tU6CzQuiXUH-fbCbsy3egB94eAAT-4ZN')
 
-for fname in os.listdir(output_dir):
-    if not fname.startswith('MASTER_'):
-        continue
-    fpath = os.path.join(output_dir, fname)
-    mime = ('application/json' if fname.endswith('.json') else
-            'text/csv' if fname.endswith('.csv') else
-            'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+# Look for outputs in relative (GHA) and absolute (Colab) paths
+paths_to_check = [
+    'job_outputs/outputs',
+    'job_outputs',
+    '/tmp/job_outputs/outputs',
+    '/tmp/job_outputs'
+]
 
-    meta = {'name': fname, 'parents': [folder]}
-    media = MediaFileUpload(fpath, mimetype=mime, resumable=True)
-    f = service.files().create(body=meta, media_body=media, fields='id').execute()
-    print(f'Uploaded {fname} → Drive ID {f.get("id")}')
+output_dir = None
+for p in paths_to_check:
+    if os.path.isdir(p):
+        output_dir = p
+        break
+
+if not output_dir:
+    print(f"❌ Error: Output directory not found. Checked: {paths_to_check}")
+else:
+    print(f"Scanning {output_dir} for files to upload to folder {folder}...")
+    for fname in os.listdir(output_dir):
+        if not fname.startswith('MASTER_'):
+            continue
+        fpath = os.path.join(output_dir, fname)
+        
+        # Determine MimeType
+        if fname.endswith('.json'): mime = 'application/json'
+        elif fname.endswith('.csv'): mime = 'text/csv'
+        else: mime = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+
+        meta = {'name': fname, 'parents': [folder]}
+        media = MediaFileUpload(fpath, mimetype=mime, resumable=True)
+        
+        try:
+            f = service.files().create(body=meta, media_body=media, fields='id').execute()
+            print(f'✅ Uploaded {fname} → ID: {f.get("id")}')
+        except Exception as e:
+            print(f'❌ Failed to upload {fname}: {e}')
