@@ -47,6 +47,9 @@ jobs:
             --no-progress-bar \
             -p DRIVE_BASE /tmp/job_outputs
 
+      - name: Debug - List /tmp files
+        run: ls -R /tmp
+
       - name: Upload outputs to Google Drive
         env:
           GDRIVE_FOLDER_ID: ${{ secrets.GDRIVE_FOLDER_ID }}
