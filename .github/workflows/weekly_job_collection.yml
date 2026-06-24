@@ -1,0 +1,56 @@
+name: Weekly Job Collection
+on:
+  schedule:
+    - cron: '0 6 * * 1' # Every Monday 06:00 UTC
+  workflow_dispatch: # Manual trigger from GitHub UI
+
+# Add permissions for id-token generation
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  collect:
+    runs-on: ubuntu-latest
+    timeout-minutes: 75
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: '3.11' }
+      - name: Install dependencies
+        run: |
+          pip install papermill pandas openpyxl requests beautifulsoup4 tqdm \
+            jupyter nbconvert google-auth google-auth-oauthlib \
+            google-api-python-client
+
+      # Add Google Cloud authentication step
+      - id: 'auth'
+        uses: 'google-github-actions/auth@v2'
+        with:
+          workload_identity_provider: 'projects/$(gcloud projects describe ${{ secrets.GCP_PROJECT_ID }} --format="value(projectNumber)")/locations/global/workloadIdentityPools/github-pool/providers/github-provider'
+          service_account: 'github-pipeline@${{ secrets.GCP_PROJECT_ID }}.iam.gserviceaccount.com'
+
+      - name: Execute notebook
+        env:
+          USAJOBS_EMAIL: ${{ secrets.USAJOBS_EMAIL }}
+          USAJOBS_KEY: ${{ secrets.USAJOBS_KEY }}
+          JOOBLE_KEY: ${{ secrets.JOOBLE_KEY }}
+        run: |
+          mkdir -p /tmp/job_outputs /tmp/job_work
+          papermill CS_MBA_AI_USAJobs_Jooble_Master_Combiner.ipynb \
+            /tmp/executed_notebook.ipynb \
+            --no-progress-bar \
+            -p DRIVE_BASE /tmp/job_outputs
+
+      - name: Upload outputs to Google Drive
+        # GDRIVE_SERVICE_ACCOUNT_JSON is no longer needed; authentication is via Workload Identity
+        env:
+          GDRIVE_FOLDER_ID: ${{ secrets.GDRIVE_FOLDER_ID }}
+        run: python upload_to_drive.py
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: executed-notebook-${{ github.run_id }}
+          path: /tmp/executed_notebook.ipynb
+          retention-days: 14
