@@ -13,7 +13,7 @@ jobs:
   collect:
     runs-on: ubuntu-latest
     timeout-minutes: 75
-    steps:
+     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with: { python-version: '3.11' }
@@ -41,22 +41,20 @@ jobs:
           USAJOBS_KEY: ${{ secrets.USAJOBS_KEY }}
           JOOBLE_KEY: ${{ secrets.JOOBLE_KEY }}
         run: |
-          mkdir -p /tmp/job_outputs /tmp/job_work
+          mkdir -p job_outputs job_work
           papermill CS_MBA_AI_USAJobs_Jooble_Master_Combiner.ipynb \
-            /tmp/executed_notebook.ipynb \
+            executed_notebook.ipynb \
             --no-progress-bar \
-            -p DRIVE_BASE /tmp/job_outputs
-
-      - name: Debug - List /tmp files
-        run: ls -R /tmp
+            -p DRIVE_BASE job_outputs
 
       - name: Upload outputs to Google Drive
         env:
           GDRIVE_FOLDER_ID: ${{ secrets.GDRIVE_FOLDER_ID }}
         run: python upload_to_drive.py
 
-      - uses: actions/upload-artifact@v4
+      - name: Archive executed notebook
+        uses: actions/upload-artifact@v4
         if: always()
         with:
           name: executed-notebook-${{ github.run_id }}
-          path: /tmp/executed_notebook.ipynb
+          path: executed_notebook.ipynb
