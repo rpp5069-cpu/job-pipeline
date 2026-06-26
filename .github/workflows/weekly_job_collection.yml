@@ -8,6 +8,9 @@ jobs:
   collect:
     runs-on: ubuntu-latest
     timeout-minutes: 75
+    permissions:
+      id-token: write # Required for Workload Identity Federation
+      contents: read  # Required for actions/checkout@v4
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
