@@ -2,29 +2,35 @@ name: Weekly Job Collection
 on:
   schedule:
     - cron: '0 6 * * 1' # Every Monday 06:00 UTC
-  workflow_dispatch: 
+  workflow_dispatch: # Manual trigger from GitHub UI
 
 jobs:
   collect:
     runs-on: ubuntu-latest
-    permissions:
-      contents: write
-      id-token: write
+    timeout-minutes: 75
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with: { python-version: '3.11' }
 
+      # 1. Authenticate via Workload Identity Federation
       - id: 'auth'
         uses: 'google-github-actions/auth@v2'
         with:
-          workload_identity_provider: 'projects/71023542519/locations/global/workloadIdentityPools/github-pool/providers/github-provider-v2'
+          # Replace with your actual workload identity provider string
+          workload_identity_provider: 'projects/71023542519/locations/global/workloadIdentityPools/github-pool/providers/github-provider'
+          # Replace with your actual service account email
           service_account: 'github-pipeline@project-bf62429c-050a-4ead-b92.iam.gserviceaccount.com'
+
+      # 2. Setup gcloud CLI (optional, but good practice for WIF)
+      - name: 'Set up Cloud SDK'
+        uses: 'google-github-actions/setup-gcloud@v2'
 
       - name: Install dependencies
         run: |
           pip install papermill pandas openpyxl requests beautifulsoup4 tqdm \
-            jupyter nbconvert google-auth google-api-python-client
+            jupyter nbconvert google-auth google-auth-oauthlib \
+            google-api-python-client
 
       - name: Execute notebook
         env:
@@ -32,22 +38,21 @@ jobs:
           USAJOBS_KEY: ${{ secrets.USAJOBS_KEY }}
           JOOBLE_KEY: ${{ secrets.JOOBLE_KEY }}
         run: |
-          mkdir -p job_outputs
+          mkdir -p job_outputs job_work
           papermill "CS_MBA_AI_USAJobs_Jooble_Master_Combiner_v3_(2).ipynb" \
-            ./executed_notebook.ipynb -p DRIVE_BASE job_outputs
+            ./executed_notebook.ipynb \
+            --log-output \
+            --no-progress-bar \
+            -p DRIVE_BASE job_outputs
 
-      - name: Upload to Google Drive
+      - name: Upload outputs to Google Drive
         env:
           GDRIVE_FOLDER_ID: ${{ secrets.GDRIVE_FOLDER_ID }}
         run: python upload_to_drive.py
 
-      - name: Create GitHub Release (Public Backup)
-        uses: softprops/action-gh-release@v2
+      - name: Archive executed notebook
+        uses: actions/upload-artifact@v4
         if: always()
         with:
-          tag_name: data-${{ github.run_id }}
-          name: Job Data - ${{ github.run_id }}
-          files: job_outputs/outputs/MASTER_*
-          body: "Weekly Automated Collection. Files attached as assets below."
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          name: executed-notebook-${{ github.run_id }}
+          path: ./executed_notebook.ipynb
