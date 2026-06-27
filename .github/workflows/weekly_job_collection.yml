@@ -11,120 +11,42 @@ permissions:
   pages: write
 
 jobs:
-  # ── Job 1: Run notebook and release data ───────────────────────────────────
   run-notebook:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-
       - uses: actions/setup-python@v5
         with:
           python-version: '3.11'
-
-      # Authenticate via Workload Identity Federation (no stored key files)
       - id: auth
         uses: google-github-actions/auth@v2
         with:
-          workload_identity_provider: >-
-            projects/71023542519/locations/global/workloadIdentityPools/
-            github-pool/providers/github-provider
-          service_account: >-
-            github-pipeline@project-bf62429c-050a-4ead-b92.iam.gserviceaccount.com
-
+          workload_identity_provider: 'projects/71023542519/locations/global/workloadIdentityPools/github-pool/providers/github-provider-v2'
+          service_account: 'github-pipeline@project-bf62429c-050a-4ead-b92.iam.gserviceaccount.com'
       - name: Set up Cloud SDK
         uses: google-github-actions/setup-gcloud@v2
-
       - name: Install Python dependencies
         run: |
-          pip install papermill pandas openpyxl requests beautifulsoup4 tqdm \
-            jupyter nbconvert google-auth google-auth-oauthlib \
-            google-api-python-client plotly ipywidgets ipyvuetify \
+          pip install papermill pandas openpyxl requests beautifulsoup4 tqdm \\
+            jupyter nbconvert google-auth google-auth-oauthlib \\
+            google-api-python-client plotly ipywidgets ipyvuetify \\
             kaleido reportlab voila
-
-      - name: Execute notebook (data collection + dashboard)
+      - name: Execute notebook
         env:
           USAJOBS_EMAIL: ${{ secrets.USAJOBS_EMAIL }}
           USAJOBS_KEY:   ${{ secrets.USAJOBS_KEY }}
           JOOBLE_KEY:    ${{ secrets.JOOBLE_KEY }}
         run: |
           mkdir -p job_outputs
-          papermill \
-            "CS_MBA_AI_USAJobs_Jooble_Master_Combiner_v3_(2).ipynb" \
-            ./executed_notebook.ipynb \
-            --log-output \
-            --no-progress-bar \
-            -p DRIVE_BASE job_outputs
-
+          papermill "CS_MBA_AI_USAJobs_Jooble_Master_Combiner_v3_(2).ipynb" ./executed_notebook.ipynb --log-output --no-progress-bar -p DRIVE_BASE job_outputs
       - name: Upload master files to Google Drive
         env:
           GDRIVE_FOLDER_ID: ${{ secrets.GDRIVE_FOLDER_ID }}
         run: python upload_to_drive.py
-
-      - name: Create GitHub Release with master files
+      - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
           tag_name: data-${{ github.run_id }}
-          name: "Job Pipeline Data — Run ${{ github.run_id }}"
-          body: |
-            Automated weekly data release.
-            - Source: USAJobs API + Jooble API
-            - Competency framework: O*NET 24.2
-            - Domains: CS, MBA, DATA_ANALYTICS, AI
-          files: |
-            job_outputs/outputs/MASTER_*.json
-            job_outputs/outputs/MASTER_*.csv
-            job_outputs/outputs/MASTER_*.xlsx
+          files: job_outputs/outputs/MASTER_*.json
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Archive executed notebook artifact
-        uses: actions/upload-artifact@v4
-        if: always()
-        with:
-          name: executed-notebook-${{ github.run_id }}
-          path: ./executed_notebook.ipynb
-
-  # ── Job 2: Export Voilà dashboard → GitHub Pages ──────────────────────────
-  deploy-dashboard:
-    needs: [run-notebook]
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - uses: actions/setup-python@v5
-        with:
-          python-version: '3.11'
-
-      - name: Install rendering dependencies
-        run: |
-          pip install voila nbconvert plotly ipywidgets \
-            kaleido reportlab pandas openpyxl
-
-      - name: Download executed notebook artifact
-        uses: actions/download-artifact@v4
-        with:
-          name: executed-notebook-${{ github.run_id }}
-          path: .
-
-      - name: Rename executed notebook for export
-        run: |
-          mv executed_notebook.ipynb dashboard_notebook.ipynb
-
-      - name: Export dashboard as static HTML via nbconvert
-        run: |
-          jupyter nbconvert \
-            --to html \
-            --execute \
-            --ExecutePreprocessor.timeout=600 \
-            --no-input \
-            dashboard_notebook.ipynb \
-            --output index.html
-
-      - name: Deploy to GitHub Pages
-        uses: peaceiris/actions-gh-pages@v4
-        with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: ./
-          publish_branch: gh-pages
-          include_files: index.html
-          commit_message: "Deploy dashboard — run ${{ github.run_id }}"
