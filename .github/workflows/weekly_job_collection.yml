@@ -27,10 +27,10 @@ jobs:
         uses: google-github-actions/setup-gcloud@v2
       - name: Install Python dependencies
         run: |
-          pip install papermill pandas openpyxl requests beautifulsoup4 tqdm \
-            jupyter nbconvert google-auth google-auth-oauthlib \
-            google-api-python-client plotly ipywidgets ipyvuetify \
-            kaleido reportlab voila
+          pip install papermill pandas openpyxl requests beautifulsoup4 tqdm \\
+            jupyter nbconvert google-auth google-auth-oauthlib \\
+            google-api-python-client plotly ipywidgets ipyvuetify \\
+            kaleido reportlab voila anywidget
       - name: Execute notebook
         env:
           USAJOBS_EMAIL: ${{ secrets.USAJOBS_EMAIL }}
@@ -40,7 +40,7 @@ jobs:
           mkdir -p job_outputs
           papermill "CS_MBA_AI_USAJobs_Jooble_Master_Combiner_v3_Dashboard.ipynb" ./executed_notebook.ipynb --log-output --no-progress-bar -p DRIVE_BASE job_outputs
       - name: Upload master files to Google Drive
-        env:      
+        env:
           GDRIVE_FOLDER_ID: ${{ secrets.GDRIVE_FOLDER_ID }}
         run: python upload_to_drive.py
       - name: Create GitHub Release
