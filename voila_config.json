@@ -1,4 +1,4 @@
-{
+VOILA_CONFIG = {
     "VoilaConfiguration": {
         "enable_nbextensions": True,
         "theme": "light",
