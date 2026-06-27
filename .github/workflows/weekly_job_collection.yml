@@ -1,53 +1,85 @@
-name: Weekly Job Collection
+name: Weekly Job Pipeline + Dashboard Deploy
+
 on:
   schedule:
-    - cron: '0 6 * * 1' # Every Monday 06:00 UTC
-  workflow_dispatch: 
+    - cron: '0 6 * * 1'   # Every Monday at 06:00 UTC
+  workflow_dispatch:       # Allow manual trigger from GitHub UI
+
+permissions:
+  contents: write
+  id-token: write
+  pages: write
 
 jobs:
-  collect:
+  # ── Job 1: Run notebook and release data ───────────────────────────────────
+  run-notebook:
     runs-on: ubuntu-latest
-    permissions:
-      contents: write
-      id-token: write
     steps:
       - uses: actions/checkout@v4
+
       - uses: actions/setup-python@v5
-        with: { python-version: '3.11' }
-
-      - id: 'auth'
-        uses: 'google-github-actions/auth@v2'
         with:
-          workload_identity_provider: 'projects/71023542519/locations/global/workloadIdentityPools/github-pool/providers/github-provider-v2'
-          service_account: 'github-pipeline@project-bf62429c-050a-4ead-b92.iam.gserviceaccount.com'
+          python-version: '3.11'
 
-      - name: Install dependencies
+      # Authenticate via Workload Identity Federation (no stored key files)
+      - id: auth
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: >-
+            projects/71023542519/locations/global/workloadIdentityPools/
+            github-pool/providers/github-provider-v2
+          service_account: >-
+            github-pipeline@project-bf62429c-050a-4ead-b92.iam.gserviceaccount.com
+
+      - name: Set up Cloud SDK
+        uses: google-github-actions/setup-gcloud@v2
+
+      - name: Install Python dependencies
         run: |
-          pip install papermill pandas openpyxl requests beautifulsoup4 tqdm \
-            jupyter nbconvert google-auth google-api-python-client
+          pip install papermill pandas openpyxl requests beautifulsoup4 tqdm \\
+            jupyter nbconvert google-auth google-auth-oauthlib \\
+            google-api-python-client plotly ipywidgets ipyvuetify \\
+            kaleido reportlab voila
 
-      - name: Execute notebook
+      - name: Execute notebook (data collection + dashboard)
         env:
           USAJOBS_EMAIL: ${{ secrets.USAJOBS_EMAIL }}
-          USAJOBS_KEY: ${{ secrets.USAJOBS_KEY }}
-          JOOBLE_KEY: ${{ secrets.JOOBLE_KEY }}
+          USAJOBS_KEY:   ${{ secrets.USAJOBS_KEY }}
+          JOOBLE_KEY:    ${{ secrets.JOOBLE_KEY }}
         run: |
           mkdir -p job_outputs
-          papermill "CS_MBA_AI_USAJobs_Jooble_Master_Combiner_v3_(2).ipynb" \
-            ./executed_notebook.ipynb -p DRIVE_BASE job_outputs
+          papermill \\
+            "CS_MBA_AI_USAJobs_Jooble_Master_Combiner_v3_(2).ipynb" \\
+            ./executed_notebook.ipynb \\
+            --log-output \\
+            --no-progress-bar \\
+            -p DRIVE_BASE job_outputs
 
-      - name: Upload to Google Drive
+      - name: Upload master files to Google Drive
         env:
           GDRIVE_FOLDER_ID: ${{ secrets.GDRIVE_FOLDER_ID }}
         run: python upload_to_drive.py
 
-      - name: Create GitHub Release (Public Backup)
+      - name: Create GitHub Release with master files
         uses: softprops/action-gh-release@v2
-        if: always()
         with:
           tag_name: data-${{ github.run_id }}
-          name: Job Data - ${{ github.run_id }}
-          files: job_outputs/outputs/MASTER_*
-          body: "Weekly Automated Collection. Files attached as assets below."
+          name: "Job Pipeline Data — Run ${{ github.run_id }}"
+          body: |
+            Automated weekly data release.
+            - Source: USAJobs API + Jooble API
+            - Competency framework: O*NET 24.2
+            - Domains: CS, MBA, DATA_ANALYTICS, AI
+          files: |
+            job_outputs/outputs/MASTER_*.json
+            job_outputs/outputs/MASTER_*.csv
+            job_outputs/outputs/MASTER_*.xlsx
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Archive executed notebook artifact
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: executed-notebook-${{ github.run_id }}
+          path: ./executed_notebook.ipynb
