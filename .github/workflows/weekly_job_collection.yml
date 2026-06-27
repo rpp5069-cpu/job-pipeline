@@ -83,3 +83,48 @@ jobs:
         with:
           name: executed-notebook-${{ github.run_id }}
           path: ./executed_notebook.ipynb
+
+  # ── Job 2: Export Voilà dashboard → GitHub Pages ──────────────────────────
+  deploy-dashboard:
+    needs: [run-notebook]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install rendering dependencies
+        run: |
+          pip install voila nbconvert plotly ipywidgets \\
+            kaleido reportlab pandas openpyxl
+
+      - name: Download executed notebook artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: executed-notebook-${{ github.run_id }}
+          path: .
+
+      - name: Rename executed notebook for export
+        run: |
+          mv executed_notebook.ipynb dashboard_notebook.ipynb
+
+      - name: Export dashboard as static HTML via nbconvert
+        run: |
+          jupyter nbconvert \\
+            --to html \\
+            --execute \\
+            --ExecutePreprocessor.timeout=600 \\
+            --no-input \\
+            dashboard_notebook.ipynb \\
+            --output index.html
+
+      - name: Deploy to GitHub Pages
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./
+          publish_branch: gh-pages
+          include_files: index.html
+          commit_message: "Deploy dashboard — run ${{ github.run_id }}"
