@@ -36,6 +36,9 @@ jobs:
         run: |
           mkdir -p job_outputs
           papermill "CS_MBA_AI_USAJobs_Jooble_Master_Combiner_v3_Dashboard.ipynb" ./executed_notebook.ipynb --log-output --no-progress-bar -p DRIVE_BASE job_outputs
+      - name: Generate Static HTML for GitHub Pages
+        run: |
+          jupyter nbconvert --to html --template classic --no-input executed_notebook.ipynb --output index.html
       - name: Upload master files to Google Drive
         env:
           GDRIVE_FOLDER_ID: ${{ secrets.GDRIVE_FOLDER_ID }}
@@ -47,3 +50,11 @@ jobs:
           files: job_outputs/outputs/MASTER_*.json
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Deploy to GitHub Pages
+        uses: peaceiris/actions-gh-pages@v3
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: .
+          publish_branch: gh-pages
+          force_orphan: true
+          keep_files: true
