@@ -1,3 +1,4 @@
+
 name: Weekly Job Pipeline + Dashboard Deploy
 
 on:
@@ -27,7 +28,7 @@ jobs:
         with:
           workload_identity_provider: >-
             projects/71023542519/locations/global/workloadIdentityPools/
-            github-pool/providers/github-provider-v2
+            github-pool/providers/github-provider
           service_account: >-
             github-pipeline@project-bf62429c-050a-4ead-b92.iam.gserviceaccount.com
 
@@ -36,9 +37,9 @@ jobs:
 
       - name: Install Python dependencies
         run: |
-          pip install papermill pandas openpyxl requests beautifulsoup4 tqdm \\
-            jupyter nbconvert google-auth google-auth-oauthlib \\
-            google-api-python-client plotly ipywidgets ipyvuetify \\
+          pip install papermill pandas openpyxl requests beautifulsoup4 tqdm \
+            jupyter nbconvert google-auth google-auth-oauthlib \
+            google-api-python-client plotly ipywidgets ipyvuetify \
             kaleido reportlab voila
 
       - name: Execute notebook (data collection + dashboard)
@@ -48,11 +49,11 @@ jobs:
           JOOBLE_KEY:    ${{ secrets.JOOBLE_KEY }}
         run: |
           mkdir -p job_outputs
-          papermill \\
-            "CS_MBA_AI_USAJobs_Jooble_Master_Combiner_v3_(2).ipynb" \\
-            ./executed_notebook.ipynb \\
-            --log-output \\
-            --no-progress-bar \\
+          papermill \
+            "CS_MBA_AI_USAJobs_Jooble_Master_Combiner_v3_(2).ipynb" \
+            ./executed_notebook.ipynb \
+            --log-output \
+            --no-progress-bar \
             -p DRIVE_BASE job_outputs
 
       - name: Upload master files to Google Drive
@@ -97,7 +98,7 @@ jobs:
 
       - name: Install rendering dependencies
         run: |
-          pip install voila nbconvert plotly ipywidgets \\
+          pip install voila nbconvert plotly ipywidgets \
             kaleido reportlab pandas openpyxl
 
       - name: Download executed notebook artifact
@@ -112,12 +113,12 @@ jobs:
 
       - name: Export dashboard as static HTML via nbconvert
         run: |
-          jupyter nbconvert \\
-            --to html \\
-            --execute \\
-            --ExecutePreprocessor.timeout=600 \\
-            --no-input \\
-            dashboard_notebook.ipynb \\
+          jupyter nbconvert \
+            --to html \
+            --execute \
+            --ExecutePreprocessor.timeout=600 \
+            --no-input \
+            dashboard_notebook.ipynb \
             --output index.html
 
       - name: Deploy to GitHub Pages
