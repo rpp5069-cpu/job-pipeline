@@ -27,10 +27,7 @@ jobs:
         uses: google-github-actions/setup-gcloud@v2
       - name: Install Python dependencies
         run: |
-          pip install papermill pandas openpyxl requests beautifulsoup4 tqdm \\
-            jupyter nbconvert google-auth google-auth-oauthlib \\
-            google-api-python-client plotly ipywidgets ipyvuetify \\
-            kaleido reportlab voila anywidget
+          pip install papermill pandas openpyxl requests beautifulsoup4 tqdm jupyter nbconvert google-auth google-auth-oauthlib google-api-python-client plotly ipywidgets ipyvuetify kaleido reportlab voila anywidget
       - name: Execute notebook
         env:
           USAJOBS_EMAIL: ${{ secrets.USAJOBS_EMAIL }}
