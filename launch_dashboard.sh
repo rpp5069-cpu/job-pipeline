@@ -1,4 +1,4 @@
-VOILA_LAUNCH = '''
+
 #!/usr/bin/env bash
 # Run this script from the repo root to serve the dashboard locally
 # Usage: bash launch_dashboard.sh
@@ -10,4 +10,4 @@ voila "$NOTEBOOK" \
   --port=8866 \
   --theme=light \
   --strip_sources=True
-'''
+
