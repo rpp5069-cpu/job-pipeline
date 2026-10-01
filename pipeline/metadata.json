@@ -1,0 +1,59 @@
+{
+  "name": "Job Postings Pipeline",
+  "description": "Streaming pipeline for job postings",
+  "parameters": [
+    {
+      "name": "pipeline_mode", 
+      "label": "Pipeline Mode", 
+      "helpText": "Run mode: 'batch' or 'streaming'"
+    },
+    {
+      "name": "input_subscription", 
+      "label": "Pub/Sub Subscription", 
+      "helpText": "Full Pub/Sub subscription path"
+    },
+    {
+      "name": "gcs_input_pattern", 
+      "label": "GCS Input Pattern", 
+      "helpText": "Pattern for batch input files",
+      "isOptional": true
+    },
+    {
+      "name": "bq_table", 
+      "label": "BigQuery Table", 
+      "helpText": "project:dataset.table"
+    },
+    {
+      "name": "gcs_output_path", 
+      "label": "GCS Output Prefix", 
+      "helpText": "gs://bucket/processed/",
+      "isOptional": true
+    },
+    {
+      "name": "dlq_topic",
+      "label": "Dead-letter Topic",
+      "helpText": "Full Pub/Sub topic path for malformed messages (streaming mode, optional)",
+      "isOptional": true
+    },
+    {
+      "name": "project",
+      "label": "GCP Project",
+      "helpText": "Project ID (passed through to beam_pipeline.py's --project)"
+    },
+    {
+      "name": "region",
+      "label": "Region",
+      "helpText": "e.g. us-central1 (passed through to beam_pipeline.py's --region)"
+    },
+    {
+      "name": "temp_location", 
+      "label": "Temp Location", 
+      "helpText": "GCS path for temporary files"
+    },
+    {
+      "name": "staging_location", 
+      "label": "Staging Location", 
+      "helpText": "GCS path for staging files"
+    }
+  ]
+}

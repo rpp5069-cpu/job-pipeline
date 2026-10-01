@@ -1,0 +1,1819 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Job Postings Intelligence — CS · MBA · AI · Data Analytics</title>
+<style>
+  /* ── Design System ─────────────────────────────────────────────────────── */
+  :root {
+    --ink:       #0f1117;
+    --ink-mid:   #3a3d4a;
+    --ink-muted: #7a7f94;
+    --paper:     #f7f8fc;
+    --surface:   #ffffff;
+    --border:    #e2e5ef;
+
+    --cs:    #2563eb;  /* blue  */
+    --mba:   #16a34a;  /* green */
+    --da:    #9333ea;  /* purple */
+    --ai:    #dc2626;  /* red   */
+
+    --high:   #059669;
+    --medium: #d97706;
+    --low:    #6b7280;
+
+    --usa:    #1d4ed8;
+    --jooble: #ea580c;
+
+    --accent: #2563eb;
+    --radius: 6px;
+    --shadow: 0 1px 3px rgba(0,0,0,.08), 0 1px 2px rgba(0,0,0,.05);
+    --shadow-md: 0 4px 12px rgba(0,0,0,.10);
+
+    --font-mono: 'JetBrains Mono', 'Fira Code', 'Courier New', monospace;
+    --font-ui:   'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html { font-size: 14px; }
+
+  body {
+    font-family: var(--font-ui);
+    background: var(--paper);
+    color: var(--ink);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* ── Header ─────────────────────────────────────────────────────────────── */
+  .site-header {
+    background: var(--ink);
+    color: #fff;
+    padding: 0 28px;
+    height: 56px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    box-shadow: 0 1px 0 rgba(255,255,255,.07);
+  }
+
+  .header-brand {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: .3px;
+  }
+
+  .brand-dot {
+    width: 8px; height: 8px; border-radius: 50%;
+    background: var(--cs);
+    box-shadow: 10px 0 0 var(--mba), 20px 0 0 var(--ai), 30px 0 0 var(--da);
+    flex-shrink: 0;
+    margin-right: 22px;
+  }
+
+  .header-meta {
+    font-size: 11px;
+    color: rgba(255,255,255,.45);
+    font-family: var(--font-mono);
+    letter-spacing: .5px;
+  }
+
+  .live-badge {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    color: var(--high);
+    text-transform: uppercase;
+  }
+
+  .live-dot {
+    width: 6px; height: 6px; border-radius: 50%;
+    background: var(--high);
+    animation: pulse 2s infinite;
+  }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50%       { opacity: .35; }
+  }
+
+  /* ── Layout ─────────────────────────────────────────────────────────────── */
+  .layout {
+    display: grid;
+    grid-template-columns: 260px 1fr;
+    flex: 1;
+    min-height: 0;
+  }
+
+  /* ── Sidebar ─────────────────────────────────────────────────────────────── */
+  .sidebar {
+    background: var(--surface);
+    border-right: 1px solid var(--border);
+    padding: 20px 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    position: sticky;
+    top: 56px;
+    height: calc(100vh - 56px);
+    overflow-y: auto;
+  }
+
+  .sidebar-section-label {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 1.2px;
+    text-transform: uppercase;
+    color: var(--ink-muted);
+    margin-bottom: 8px;
+  }
+
+  .filter-group { display: flex; flex-direction: column; gap: 4px; }
+
+  .filter-check {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 5px 6px;
+    border-radius: var(--radius);
+    cursor: pointer;
+    transition: background .12s;
+    user-select: none;
+    font-size: 12.5px;
+  }
+
+  .filter-check:hover { background: var(--paper); }
+
+  .filter-check input[type=checkbox] {
+    width: 14px; height: 14px;
+    accent-color: var(--accent);
+    cursor: pointer;
+    flex-shrink: 0;
+  }
+
+  .domain-swatch {
+    width: 8px; height: 8px; border-radius: 2px; flex-shrink: 0;
+  }
+
+  .check-count {
+    margin-left: auto;
+    font-size: 10px;
+    color: var(--ink-muted);
+    font-family: var(--font-mono);
+    background: var(--paper);
+    padding: 1px 5px;
+    border-radius: 10px;
+  }
+
+  .score-slider-wrap { padding: 0 2px; }
+
+  .score-slider-row {
+    display: flex;
+    justify-content: space-between;
+    font-size: 11px;
+    color: var(--ink-muted);
+    margin-bottom: 6px;
+  }
+
+  #score-slider {
+    width: 100%;
+    accent-color: var(--accent);
+    cursor: pointer;
+  }
+
+  .search-wrap { position: relative; }
+
+  #search-input {
+    width: 100%;
+    padding: 7px 10px 7px 30px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    font-size: 12.5px;
+    font-family: var(--font-ui);
+    background: var(--paper);
+    color: var(--ink);
+    outline: none;
+    transition: border .15s;
+  }
+
+  #search-input:focus { border-color: var(--accent); background: var(--surface); }
+
+  .search-icon {
+    position: absolute; left: 9px; top: 50%; transform: translateY(-50%);
+    color: var(--ink-muted); pointer-events: none; font-size: 13px;
+  }
+
+  /* ── Date Range ──────────────────────────────────────────────────────────── */
+  .date-range-row {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+  .date-range-row label {
+    font-size: 10px;
+    font-weight: 600;
+    color: var(--ink-muted);
+    text-transform: uppercase;
+    letter-spacing: .8px;
+  }
+  .date-input {
+    width: 100%;
+    padding: 5px 8px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: var(--ink);
+    background: var(--paper);
+    appearance: none;
+    cursor: pointer;
+    transition: border-color .15s;
+  }
+  .date-input:focus {
+    outline: none;
+    border-color: var(--accent);
+    background: #fff;
+  }
+  .date-quick-btns {
+    display: flex;
+    gap: 4px;
+    flex-wrap: wrap;
+  }
+  .date-quick-btn {
+    font-size: 10px;
+    padding: 3px 7px;
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    background: var(--paper);
+    color: var(--ink-mid);
+    cursor: pointer;
+    font-family: var(--font-ui);
+    transition: background .12s, border-color .12s;
+  }
+  .date-quick-btn:hover { background: var(--border); border-color: var(--ink-muted); }
+  .date-quick-btn.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+  .date-range-summary {
+    font-size: 10px;
+    color: var(--ink-muted);
+    font-family: var(--font-mono);
+    min-height: 14px;
+  }
+
+  /* ── State Filter (Map Visualization) ────────────────────────────────────── */
+  .state-map-container {
+    width: 100%;
+    padding: 12px 6px;
+    background: var(--paper);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    margin-bottom: 8px;
+  }
+  .state-map-svg { width: 100%; height: auto; display: block; }
+  .state-path {
+    fill: #fff;
+    stroke: var(--border);
+    stroke-width: 0.6;
+    cursor: pointer;
+    transition: all 0.12s ease;
+  }
+  .state-path:hover { fill: #cbd5e1; }
+  .state-path.has-data { fill: #f8fafc; stroke: #cbd5e1; }
+  .state-path.active { fill: var(--accent) !important; stroke: var(--cs); stroke-width: 0.8; }
+  .state-toggle-row { display: flex; gap: 8px; align-items: center; margin-top: 4px; }
+  .state-toggle-btn {
+    font-size: 10px;
+    color: var(--accent);
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 0;
+    text-decoration: underline;
+  }
+  #state-sel-count { font-size: 9px; color: var(--ink-muted); margin-left: auto; font-family: var(--font-mono); }
+
+  /* ── Role Filter ─────────────────────────────────────────────────────────── */
+  .role-input-wrap {
+    position: relative;
+  }
+  .role-input-wrap input {
+    width: 100%;
+    padding: 5px 8px 5px 26px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    font-size: 12px;
+    color: var(--ink);
+    background: var(--paper);
+  }
+  .role-input-wrap input:focus { outline: none; border-color: var(--accent); background: #fff; }
+  .role-input-icon {
+    position: absolute;
+    left: 8px; top: 50%;
+    transform: translateY(-50%);
+    font-size: 11px;
+    color: var(--ink-muted);
+    pointer-events: none;
+  }
+
+  /* ── Download Bar ────────────────────────────────────────────────────────── */
+  .download-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    padding: 8px 14px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    margin-bottom: 12px;
+    box-shadow: var(--shadow);
+  }
+  .download-bar-label {
+    font-size: 11px;
+    color: var(--ink-mid);
+    font-weight: 500;
+  }
+  .download-bar-label strong {
+    color: var(--accent);
+    font-family: var(--font-mono);
+  }
+  .download-btns {
+    display: flex;
+    gap: 6px;
+    align-items: center;
+  }
+  .btn-download {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    padding: 5px 12px;
+    border-radius: var(--radius);
+    font-size: 11px;
+    font-weight: 600;
+    cursor: pointer;
+    border: 1px solid transparent;
+    font-family: var(--font-ui);
+    transition: background .13s, border-color .13s, color .13s;
+    letter-spacing: .2px;
+  }
+  .btn-download-json {
+    background: var(--ink);
+    color: #fff;
+    border-color: var(--ink);
+  }
+  .btn-download-json:hover { background: var(--ink-mid); border-color: var(--ink-mid); }
+  .btn-download-csv {
+    background: #fff;
+    color: var(--ink);
+    border-color: var(--border);
+  }
+  .btn-download-csv:hover { border-color: var(--accent); color: var(--accent); }
+
+  .btn-reset {
+    width: 100%;
+    padding: 8px;
+    background: transparent;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    font-size: 12px;
+    font-family: var(--font-ui);
+    color: var(--ink-mid);
+    cursor: pointer;
+    transition: all .15s;
+  }
+
+  .btn-reset:hover { background: var(--paper); border-color: var(--ink-mid); }
+
+  /* ── Main ────────────────────────────────────────────────────────────────── */
+  .main { display: flex; flex-direction: column; min-width: 0; }
+
+  /* ── KPI Strip ───────────────────────────────────────────────────────────── */
+  .kpi-strip {
+    display: grid;
+    grid-template-columns: repeat(6, 1fr);
+    gap: 0;
+    border-bottom: 1px solid var(--border);
+    background: var(--surface);
+  }
+
+  .kpi {
+    padding: 16px 20px;
+    border-right: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+  }
+
+  .kpi:last-child { border-right: none; }
+
+  .kpi-label {
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: .8px;
+    text-transform: uppercase;
+    color: var(--ink-muted);
+  }
+
+  .kpi-value {
+    font-size: 22px;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: -.5px;
+    line-height: 1;
+  }
+
+  .kpi-sub {
+    font-size: 10px;
+    color: var(--ink-muted);
+    font-family: var(--font-mono);
+  }
+
+  /* ── Charts Row ──────────────────────────────────────────────────────────── */
+  .charts-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 0;
+    border-bottom: 1px solid var(--border);
+    background: var(--surface);
+  }
+
+  .chart-cell {
+    padding: 16px 20px;
+    border-right: 1px solid var(--border);
+  }
+
+  .chart-cell:last-child { border-right: none; }
+
+  .chart-title {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: .8px;
+    text-transform: uppercase;
+    color: var(--ink-muted);
+    margin-bottom: 12px;
+  }
+
+  /* ── Bar chart ───────────────────────────────────────────────────────────── */
+  .bar-chart { display: flex; flex-direction: column; gap: 7px; }
+
+  .bar-row { display: flex; align-items: center; gap: 8px; }
+
+  .bar-label {
+    font-size: 11px;
+    width: 96px;
+    color: var(--ink-mid);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    flex-shrink: 0;
+  }
+
+  .bar-track {
+    flex: 1;
+    height: 10px;
+    background: var(--paper);
+    border-radius: 3px;
+    overflow: hidden;
+  }
+
+  .bar-fill {
+    height: 100%;
+    border-radius: 3px;
+    transition: width .4s cubic-bezier(.4,0,.2,1);
+  }
+
+  .bar-count {
+    font-size: 10px;
+    color: var(--ink-muted);
+    font-family: var(--font-mono);
+    width: 32px;
+    text-align: right;
+    flex-shrink: 0;
+  }
+
+  /* ── Donut ───────────────────────────────────────────────────────────────── */
+  .donut-wrap {
+    display: flex;
+    gap: 16px;
+    align-items: center;
+  }
+
+  .donut-svg { flex-shrink: 0; }
+
+  .donut-legend { display: flex; flex-direction: column; gap: 6px; }
+
+  .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 11px;
+    color: var(--ink-mid);
+  }
+
+  .legend-dot { width: 8px; height: 8px; border-radius: 2px; flex-shrink: 0; }
+
+  /* ── Skill bubbles ───────────────────────────────────────────────────────── */
+  .skill-cloud { display: flex; flex-wrap: wrap; gap: 5px; }
+
+  .skill-chip {
+    font-size: 10px;
+    font-family: var(--font-mono);
+    padding: 2px 7px;
+    border-radius: 3px;
+    background: var(--paper);
+    border: 1px solid var(--border);
+    color: var(--ink-mid);
+    cursor: default;
+    transition: all .15s;
+  }
+
+  .skill-chip:hover { background: var(--ink); color: #fff; border-color: var(--ink); }
+
+  .skill-chip.large { font-size: 12px; padding: 3px 9px; font-weight: 600; background: var(--ink); color: #fff; border-color: var(--ink); }
+  .skill-chip.med   { font-size: 11px; padding: 3px 8px; font-weight: 500; background: var(--ink-mid); color: #fff; border-color: var(--ink-mid); }
+
+  /* ── Table area ──────────────────────────────────────────────────────────── */
+  .table-area { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+
+  .table-toolbar {
+    padding: 10px 20px;
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+  }
+
+  .result-count {
+    font-size: 12px;
+    color: var(--ink-muted);
+    font-family: var(--font-mono);
+    white-space: nowrap;
+  }
+
+  .result-count strong { color: var(--ink); }
+
+  .sort-select {
+    padding: 5px 8px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    font-size: 12px;
+    font-family: var(--font-ui);
+    background: var(--surface);
+    color: var(--ink);
+    cursor: pointer;
+    outline: none;
+  }
+
+  .table-scroll { overflow: auto; flex: 1; }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 12px;
+  }
+
+  thead {
+    background: var(--surface);
+    position: sticky;
+    top: 0;
+    z-index: 10;
+  }
+
+  th {
+    padding: 9px 14px;
+    text-align: left;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: .8px;
+    text-transform: uppercase;
+    color: var(--ink-muted);
+    border-bottom: 1px solid var(--border);
+    white-space: nowrap;
+    cursor: pointer;
+    user-select: none;
+  }
+
+  th:hover { color: var(--ink); }
+
+  th.sorted { color: var(--accent); }
+
+  td {
+    padding: 9px 14px;
+    border-bottom: 1px solid var(--border);
+    vertical-align: middle;
+    color: var(--ink-mid);
+  }
+
+  tr:hover td { background: var(--paper); }
+
+  td.title-cell {
+    color: var(--ink);
+    font-weight: 500;
+    max-width: 240px;
+  }
+
+  td.title-cell a {
+    color: inherit;
+    text-decoration: none;
+  }
+
+  td.title-cell a:hover { color: var(--accent); text-decoration: underline; }
+
+  .domain-badge {
+    display: inline-block;
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: .8px;
+    text-transform: uppercase;
+    padding: 2px 6px;
+    border-radius: 3px;
+    color: #fff;
+  }
+
+  .tier-badge {
+    display: inline-block;
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: .5px;
+    padding: 2px 6px;
+    border-radius: 3px;
+    color: #fff;
+  }
+
+  .source-badge {
+    display: inline-block;
+    font-size: 9px;
+    font-weight: 700;
+    padding: 2px 6px;
+    border-radius: 3px;
+    color: #fff;
+  }
+
+  .era-badge {
+    display: inline-block;
+    font-size: 9px;
+    font-weight: 600;
+    padding: 2px 6px;
+    border-radius: 3px;
+  }
+
+  .skills-cell {
+    max-width: 180px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-family: var(--font-mono);
+    font-size: 10px;
+    color: var(--ink-muted);
+  }
+
+  /* ── Pagination ──────────────────────────────────────────────────────────── */
+  .pagination {
+    padding: 10px 20px;
+    background: var(--surface);
+    border-top: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+  }
+
+  .page-btns { display: flex; gap: 4px; }
+
+  .page-btn {
+    padding: 5px 10px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    background: var(--surface);
+    font-size: 12px;
+    font-family: var(--font-ui);
+    color: var(--ink-mid);
+    cursor: pointer;
+    transition: all .12s;
+  }
+
+  .page-btn:hover { background: var(--paper); }
+  .page-btn.active { background: var(--accent); color: #fff; border-color: var(--accent); font-weight: 600; }
+  .page-btn:disabled { opacity: .35; cursor: default; }
+
+  .page-info {
+    font-size: 11px;
+    color: var(--ink-muted);
+    font-family: var(--font-mono);
+  }
+
+  /* ── Empty state ─────────────────────────────────────────────────────────── */
+  .empty-state {
+    padding: 60px 20px;
+    text-align: center;
+    color: var(--ink-muted);
+  }
+
+  .empty-state h3 { font-size: 15px; color: var(--ink-mid); margin-bottom: 8px; }
+  .empty-state p  { font-size: 12px; }
+
+  /* ── Import panel ────────────────────────────────────────────────────────── */
+  .import-bar {
+    padding: 8px 20px;
+    background: linear-gradient(90deg, #1e293b 0%, #0f172a 100%);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 11px;
+    color: rgba(255,255,255,.6);
+    border-bottom: 1px solid rgba(255,255,255,.07);
+    flex-wrap: wrap;
+  }
+
+  .import-bar strong { color: rgba(255,255,255,.9); }
+
+  .btn-import {
+    padding: 4px 10px;
+    border: 1px solid rgba(255,255,255,.2);
+    border-radius: 4px;
+    background: transparent;
+    color: rgba(255,255,255,.8);
+    font-size: 11px;
+    cursor: pointer;
+    transition: all .15s;
+  }
+
+  .btn-import:hover { background: rgba(255,255,255,.1); border-color: rgba(255,255,255,.4); }
+
+  #file-input { display: none; }
+
+  .import-hint { color: rgba(255,255,255,.35); font-size: 10px; }
+
+  /* ── Scrollbar ───────────────────────────────────────────────────────────── */
+  ::-webkit-scrollbar { width: 6px; height: 6px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+  ::-webkit-scrollbar-thumb:hover { background: var(--ink-muted); }
+
+  /* ── Responsive ──────────────────────────────────────────────────────────── */
+  @media (max-width: 1100px) {
+    .layout { grid-template-columns: 220px 1fr; }
+    .kpi-strip { grid-template-columns: repeat(3, 1fr); }
+    .charts-row { grid-template-columns: 1fr 1fr; }
+  }
+
+  @media (max-width: 780px) {
+    .layout { grid-template-columns: 1fr; }
+    .sidebar { position: static; height: auto; flex-direction: row; flex-wrap: wrap; }
+    .kpi-strip { grid-template-columns: repeat(2, 1fr); }
+    .charts-row { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<!-- Header -->
+<header class="site-header">
+  <div class="header-brand">
+    <span class="brand-dot"></span>
+    Job Postings Intelligence
+    <span style="color:rgba(255,255,255,.25);font-weight:300">|</span>
+    CS · MBA · AI · Data Analytics
+  </div>
+  <span class="header-meta">D.Eng. Research · Penn State Great Valley · Rickey Patel</span>
+  <span class="live-badge"><span class="live-dot"></span>LIVE FILTERS</span>
+</header>
+
+<!-- Import Bar -->
+<div class="import-bar">
+  <strong>Load Data:</strong>
+  <button class="btn-import" onclick="document.getElementById('file-input').click()">📂 Import JSON</button>
+  <input type="file" id="file-input" accept=".json" onchange="loadFile(event)">
+  <button class="btn-import" onclick="loadSampleData()">▶ Load Sample Data</button>
+  <span class="import-hint">— or paste your MASTER_*.json exported from the pipeline, or connect BigQuery via the API endpoint below</span>
+  <button class="btn-import" onclick="showBQModal()">☁ BigQuery API</button>
+</div>
+
+<!-- Layout -->
+<div class="layout">
+
+  <!-- Sidebar Filters -->
+  <aside class="sidebar">
+
+    <div>
+      <div class="sidebar-section-label">Search</div>
+      <div class="search-wrap">
+        <span class="search-icon">🔍</span>
+        <input type="text" id="search-input" placeholder="Title, company, skills…" oninput="applyFilters()">
+      </div>
+    </div>
+
+    <div>
+      <div class="sidebar-section-label">Domain</div>
+      <div class="filter-group" id="domain-filters">
+        <label class="filter-check">
+          <input type="checkbox" value="CS" checked onchange="applyFilters()">
+          <span class="domain-swatch" style="background:var(--cs)"></span>
+          Computer Science
+          <span class="check-count" id="cnt-CS">0</span>
+        </label>
+        <label class="filter-check">
+          <input type="checkbox" value="MBA" checked onchange="applyFilters()">
+          <span class="domain-swatch" style="background:var(--mba)"></span>
+          MBA / Management
+          <span class="check-count" id="cnt-MBA">0</span>
+        </label>
+        <label class="filter-check">
+          <input type="checkbox" value="DATA_ANALYTICS" checked onchange="applyFilters()">
+          <span class="domain-swatch" style="background:var(--da)"></span>
+          Data Analytics
+          <span class="check-count" id="cnt-DATA_ANALYTICS">0</span>
+        </label>
+        <label class="filter-check">
+          <input type="checkbox" value="AI" checked onchange="applyFilters()">
+          <span class="domain-swatch" style="background:var(--ai)"></span>
+          AI / ML
+          <span class="check-count" id="cnt-AI">0</span>
+        </label>
+      </div>
+    </div>
+
+    <div>
+      <div class="sidebar-section-label">Source</div>
+      <div class="filter-group">
+        <label class="filter-check">
+          <input type="checkbox" value="USAJobs" checked onchange="applyFilters()">
+          <span class="domain-swatch" style="background:var(--usa)"></span>
+          USAJobs (Federal)
+          <span class="check-count" id="cnt-USAJobs">0</span>
+        </label>
+        <label class="filter-check">
+          <input type="checkbox" value="Jooble" checked onchange="applyFilters()">
+          <span class="domain-swatch" style="background:var(--jooble)"></span>
+          Jooble (Commercial)
+          <span class="check-count" id="cnt-Jooble">0</span>
+        </label>
+      </div>
+    </div>
+
+    <div>
+      <div class="sidebar-section-label">Era</div>
+      <div class="filter-group">
+        <label class="filter-check">
+          <input type="checkbox" value="current" checked onchange="applyFilters()">
+          Current (≥ Jan 2026)
+          <span class="check-count" id="cnt-current">0</span>
+        </label>
+        <label class="filter-check">
+          <input type="checkbox" value="historical" checked onchange="applyFilters()">
+          Historical
+          <span class="check-count" id="cnt-historical">0</span>
+        </label>
+        <label class="filter-check">
+          <input type="checkbox" value="unknown" checked onchange="applyFilters()">
+          Unknown
+          <span class="check-count" id="cnt-unknown">0</span>
+        </label>
+      </div>
+    </div>
+
+    <div>
+      <div class="sidebar-section-label">Relevance Tier</div>
+      <div class="filter-group">
+        <label class="filter-check">
+          <input type="checkbox" value="HIGH" checked onchange="applyFilters()">
+          <span class="domain-swatch" style="background:var(--high)"></span>
+          HIGH (≥ 6)
+          <span class="check-count" id="cnt-HIGH">0</span>
+        </label>
+        <label class="filter-check">
+          <input type="checkbox" value="MEDIUM" checked onchange="applyFilters()">
+          <span class="domain-swatch" style="background:var(--medium)"></span>
+          MEDIUM (≥ 4)
+          <span class="check-count" id="cnt-MEDIUM">0</span>
+        </label>
+        <label class="filter-check">
+          <input type="checkbox" value="LOW" checked onchange="applyFilters()">
+          <span class="domain-swatch" style="background:var(--low)"></span>
+          LOW (≥ 2)
+          <span class="check-count" id="cnt-LOW">0</span>
+        </label>
+      </div>
+    </div>
+
+    <div>
+      <div class="sidebar-section-label">Min Relevance Score</div>
+      <div class="score-slider-wrap">
+        <div class="score-slider-row">
+          <span>Score ≥ <strong id="score-val">0</strong></span>
+          <span>max 12</span>
+        </div>
+        <input type="range" id="score-slider" min="0" max="12" value="0"
+               oninput="document.getElementById('score-val').textContent=this.value; applyFilters()">
+      </div>
+    </div>
+
+    <!-- Date Range -->
+    <div>
+      <div class="sidebar-section-label">Date Range</div>
+      <div class="date-range-row">
+        <label for="date-start">From</label>
+        <input type="date" id="date-start" class="date-input" onchange="applyFilters(); updateDateSummary();">
+        <label for="date-end">To</label>
+        <input type="date" id="date-end" class="date-input" onchange="applyFilters(); updateDateSummary();">
+      </div>
+      <div class="date-quick-btns" style="margin-top:7px;">
+        <button class="date-quick-btn" onclick="setDatePreset('30d')">30d</button>
+        <button class="date-quick-btn" onclick="setDatePreset('90d')">90d</button>
+        <button class="date-quick-btn" onclick="setDatePreset('6m')">6mo</button>
+        <button class="date-quick-btn" onclick="setDatePreset('1y')">1yr</button>
+        <button class="date-quick-btn" onclick="setDatePreset('all')">All</button>
+      </div>
+      <div class="date-range-summary" id="date-range-summary" style="margin-top:5px;"></div>
+    </div>
+
+    <!-- State Filter (Interactive Map) -->
+    <div>
+      <div class="sidebar-section-label">Geographic Filter</div>
+      <div class="state-map-container" id="state-map-container"></div>
+      <div class="state-toggle-row">
+        <button class="state-toggle-btn" onclick="toggleAllStates(true)">Select All</button>
+        <button class="state-toggle-btn" onclick="toggleAllStates(false)">Clear</button>
+        <span id="state-sel-count"></span>
+      </div>
+    </div>
+
+    <!-- Role / Title Filter -->
+    <div>
+      <div class="sidebar-section-label">Role / Title</div>
+      <div class="role-input-wrap">
+        <span class="role-input-icon">💼</span>
+        <input type="text" id="role-input" placeholder="e.g. engineer, analyst…" oninput="applyFilters()">
+      </div>
+    </div>
+
+    <button class="btn-reset" onclick="resetFilters()">↺ Reset All Filters</button>
+
+  </aside>
+
+  <!-- Main Content -->
+  <main class="main">
+
+    <!-- KPI Strip -->
+    <div class="kpi-strip">
+      <div class="kpi">
+        <div class="kpi-label">Total Postings</div>
+        <div class="kpi-value" id="kpi-total" style="color:var(--accent)">0</div>
+        <div class="kpi-sub">all sources</div>
+      </div>
+      <div class="kpi">
+        <div class="kpi-label">Filtered</div>
+        <div class="kpi-value" id="kpi-filtered">0</div>
+        <div class="kpi-sub">visible rows</div>
+      </div>
+      <div class="kpi">
+        <div class="kpi-label">Current Era</div>
+        <div class="kpi-value" id="kpi-current" style="color:var(--high)">0</div>
+        <div class="kpi-sub">≥ Jan 2026</div>
+      </div>
+      <div class="kpi">
+        <div class="kpi-label">HIGH Tier</div>
+        <div class="kpi-value" id="kpi-high" style="color:var(--high)">0</div>
+        <div class="kpi-sub">relevance ≥ 6</div>
+      </div>
+      <div class="kpi">
+        <div class="kpi-label">Avg Score</div>
+        <div class="kpi-value" id="kpi-avgscore">—</div>
+        <div class="kpi-sub">0–12 scale</div>
+      </div>
+      <div class="kpi">
+        <div class="kpi-label">Unique Skills</div>
+        <div class="kpi-value" id="kpi-skills">0</div>
+        <div class="kpi-sub">tech taxonomy</div>
+      </div>
+    </div>
+
+    <!-- Charts Row -->
+    <div class="charts-row">
+      <div class="chart-cell">
+        <div class="chart-title">Postings by Domain</div>
+        <div class="bar-chart" id="domain-bars"></div>
+      </div>
+      <div class="chart-cell">
+        <div class="chart-title">Source Split</div>
+        <div class="donut-wrap" id="source-donut-wrap">
+          <svg class="donut-svg" id="source-svg" width="80" height="80" viewBox="0 0 80 80"></svg>
+          <div class="donut-legend" id="source-legend"></div>
+        </div>
+      </div>
+      <div class="chart-cell">
+        <div class="chart-title">Top Skills</div>
+        <div class="skill-cloud" id="skill-cloud"></div>
+      </div>
+    </div>
+
+    <!-- Download Bar -->
+    <div class="download-bar">
+      <div class="download-bar-label">
+        Export <strong id="dl-count">0</strong> filtered posting(s)
+      </div>
+      <div class="download-btns">
+        <button class="btn-download btn-download-json" onclick="downloadFiltered('json')">
+          ⬇ JSON
+        </button>
+        <button class="btn-download btn-download-csv" onclick="downloadFiltered('csv')">
+          ⬇ CSV
+        </button>
+      </div>
+    </div>
+
+    <!-- Table -->
+    <div class="table-area">
+      <div class="table-toolbar">
+        <span class="result-count" id="result-count">—</span>
+        <select class="sort-select" id="sort-select" onchange="applyFilters()">
+          <option value="score-desc">Sort: Score ↓</option>
+          <option value="score-asc">Sort: Score ↑</option>
+          <option value="date-desc">Sort: Date ↓</option>
+          <option value="date-asc">Sort: Date ↑</option>
+          <option value="title-asc">Sort: Title A→Z</option>
+          <option value="company-asc">Sort: Company A→Z</option>
+        </select>
+      </div>
+
+      <div class="table-scroll">
+        <table>
+          <thead>
+            <tr>
+              <th onclick="setSort('title-asc')">Job Title</th>
+              <th onclick="setSort('company-asc')">Company</th>
+              <th>Location</th>
+              <th>Domain</th>
+              <th>Source</th>
+              <th>Era</th>
+              <th onclick="setSort('score-desc')">Score</th>
+              <th>Tier</th>
+              <th>Skills</th>
+              <th>O*NET</th>
+              <th onclick="setSort('date-desc')">Date</th>
+            </tr>
+          </thead>
+          <tbody id="table-body"></tbody>
+        </table>
+        <div class="empty-state" id="empty-state" style="display:none">
+          <h3>No results</h3>
+          <p>Try adjusting your filters or loading data from the import bar above.</p>
+        </div>
+      </div>
+
+      <div class="pagination" id="pagination">
+        <span class="page-info" id="page-info">—</span>
+        <div class="page-btns" id="page-btns"></div>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<!-- BigQuery Modal (simple) -->
+<div id="bq-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:200;align-items:center;justify-content:center;">
+  <div style="background:var(--surface);border-radius:8px;padding:24px;max-width:500px;width:90%;box-shadow:var(--shadow-md);">
+    <h3 style="margin-bottom:12px;font-size:14px;">BigQuery API Connection</h3>
+    <p style="font-size:12px;color:var(--ink-muted);margin-bottom:16px;line-height:1.6;">
+      To pull live data from BigQuery, deploy a Cloud Run proxy that serves
+      the <code style="font-family:var(--font-mono);background:var(--paper);padding:1px 4px;border-radius:3px;">extracted_features</code> table as JSON.<br><br>
+      <strong>Quick setup:</strong> run the provided <code style="font-family:var(--font-mono)">bq_proxy.py</code> locally or on Cloud Run,
+      then paste the endpoint URL below.
+    </p>
+    <input type="text" id="bq-url" value="https://bq-proxy-799875989309.us-central1.run.app/postings" placeholder="https://bq-proxy-799875989309.us-central1.run.app/postings">
+    <div style="display:flex;gap:8px;justify-content:flex-end;">
+      <button onclick="closeBQModal()" style="padding:7px 14px;border:1px solid var(--border);border-radius:var(--radius);background:transparent;cursor:pointer;font-size:12px;">Cancel</button>
+      <button onclick="fetchFromBQ()" style="padding:7px 14px;border:none;border-radius:var(--radius);background:var(--accent);color:#fff;cursor:pointer;font-size:12px;font-weight:600;">Connect</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ── State ─────────────────────────────────────────────────────────────────────
+let ALL_DATA      = [];
+let FILTERED_DATA = [];
+let PAGE          = 1;
+const PAGE_SIZE   = 50;
+let SORT_KEY      = "score-desc";
+let SELECTED_STATES = new Set();
+
+const DOMAIN_COLORS = { CS:"#2563eb", MBA:"#16a34a", DATA_ANALYTICS:"#9333ea", AI:"#dc2626" };
+const TIER_COLORS   = { HIGH:"#059669", MEDIUM:"#d97706", LOW:"#6b7280", EXCLUDE:"#dc2626" };
+const SOURCE_COLORS = { USAJobs:"#1d4ed8", Jooble:"#ea580c" };
+const ERA_STYLES    = {
+  current:   "background:#d1fae5;color:#065f46",
+  historical:"background:#f3f4f6;color:#374151",
+  unknown:   "background:#fef3c7;color:#92400e",
+};
+
+// ── Data loading ──────────────────────────────────────────────────────────────
+function loadFile(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    try {
+      const parsed = JSON.parse(e.target.result);
+      const records = parsed.postings || parsed;
+      if (!Array.isArray(records)) throw new Error("Expected array or {postings:[...]}");
+      ingestData(records);
+    } catch(err) {
+      alert("Could not parse JSON: " + err.message);
+    }
+  };
+  reader.readAsText(file);
+}
+
+function loadSampleData() {
+  const DOMAINS  = ["CS","MBA","DATA_ANALYTICS","AI"];
+  const SOURCES  = ["USAJobs","Jooble"];
+  const TIERS    = ["HIGH","HIGH","MEDIUM","MEDIUM","LOW"];
+  const ERAS     = ["current","current","historical","unknown"];
+  const TITLES   = [
+    "Software Engineer","Data Scientist","Machine Learning Engineer","Financial Analyst",
+    "Program Analyst","AI Researcher","Cloud Engineer","Data Analyst","NLP Engineer",
+    "Management Analyst","Computer Scientist","DevOps Engineer","MLOps Engineer",
+    "Business Intelligence Analyst","Strategy Consultant","Applied Scientist",
+    "Data Engineer","Product Manager","Cybersecurity Analyst","Deep Learning Engineer",
+  ];
+  const COMPANIES = [
+    "Department of Defense","NASA","Google","Amazon","Booz Allen Hamilton",
+    "MITRE","Deloitte","Leidos","OpenAI","Palantir","McKinsey","JPMorgan",
+    "Department of Veterans Affairs","NSA","Microsoft","Meta","NVIDIA",
+    "General Services Administration","IBM","Databricks",
+  ];
+  const SKILLS_POOL = ["Python","SQL","Spark","TensorFlow","Docker","Kubernetes",
+    "Java","Scala","GCP","AWS","Azure","PyTorch","Airflow","BigQuery","dbt",
+    "Tableau","Power BI","Scikit-learn","Pandas","NumPy","MLOps","Terraform",
+    "LangChain","Hugging Face","REST API","Git","Agile","Scrum",
+  ];
+  const ONET_POOL = ["Programming","Critical Thinking","Systems Analysis",
+    "Technology Design","Monitoring","Active Learning","Quality Control Analysis",
+    "Coordination","Troubleshooting","Judgment and Decision Making",
+  ];
+  const LOCS = ["Washington, DC, US","San Francisco, CA, US","New York, NY, US",
+    "Remote, US","Austin, TX, US","Seattle, WA, US","Chicago, IL, US",
+    "McLean, VA, US","Atlanta, GA, US","Boston, MA, US",
+  ];
+
+  const rnd  = (arr) => arr[Math.floor(Math.random() * arr.length)];
+  const rndN = (n)   => Math.floor(Math.random() * n);
+  const pick = (arr, n) => arr.slice().sort(() => .5 - Math.random()).slice(0, n);
+
+  const records = Array.from({length: 420}, (_, i) => {
+    const score  = 2 + rndN(11);
+    const tier   = score >= 6 ? "HIGH" : score >= 4 ? "MEDIUM" : "LOW";
+    const domain = rnd(DOMAINS);
+    const src    = rnd(SOURCES);
+    const era    = rnd(ERAS);
+    const skills = pick(SKILLS_POOL, 3 + rndN(5));
+    const onet   = pick(ONET_POOL, 2 + rndN(5));
+    const year   = era === "current" ? 2026 : 2023 + rndN(3);
+    const month  = String(1 + rndN(12)).padStart(2,"0");
+    const day    = String(1 + rndN(28)).padStart(2,"0");
+    return {
+      id: i + 1,
+      hash_id: Math.random().toString(36).slice(2,14),
+      job_title:        rnd(TITLES),
+      company:          rnd(COMPANIES),
+      location:         rnd(LOCS),
+      domain:           domain,
+      source:           src,
+      era:              era,
+      publication_date: `${year}-${month}-${day}`,
+      salary:           src === "USAJobs" ? `$${60+rndN(80)}k-$${140+rndN(80)}k PA` : "",
+      job_type:         rnd(["Full-time","Part-time","Contract",""]),
+      grade:            src === "USAJobs" ? rnd(["GS-11","GS-12","GS-13","GS-14","GS-15",""]) : "",
+      relevance_score:  score,
+      relevance_tier:   tier,
+      required_skills:  skills,
+      onet_skills:      onet,
+      onet_basic:       rndN(4),
+      onet_social:      rndN(4),
+      onet_technical:   rndN(6),
+      onet_systems:     rndN(3),
+      onet_resource:    rndN(3),
+      onet_complex:     rndN(2),
+      tech_skill_count: skills.length,
+      onet_skill_count: onet.length,
+      description:      `Seeking a ${rnd(TITLES)} to join our team. Responsibilities include data analysis, machine learning, and strategic initiatives.`,
+      job_url:          src === "USAJobs" ? `https://www.usajobs.gov/job/${100000+i}` : `https://jooble.org/job/${200000+i}`,
+      search_keyword:   "",
+      matched_terms:    skills.slice(0,2).join("|"),
+    };
+  });
+  ingestData(records);
+}
+
+function ingestData(records) {
+  // Auto-populate date range to span the loaded data if dates are clear
+  if (records.length) {
+    const dates = records.map(r => r.publication_date||"").filter(Boolean).sort();
+    if (dates.length) {
+      const dsEl = document.getElementById("date-start");
+      const deEl = document.getElementById("date-end");
+      if (dsEl && !dsEl.value) dsEl.value = dates[0];
+      if (deEl && !deEl.value) deEl.value = dates[dates.length-1];
+      updateDateSummary();
+    }
+  }
+  ALL_DATA = records.map((r, i) => ({
+    ...r,
+    id:             r.id || (i + 1),
+    required_skills: normaliseSkills(r.required_skills),
+    onet_skills:     normaliseSkills(r.onet_skills),
+  }));
+  PAGE = 1;
+  updateCounts();
+  buildStateFilter();
+  applyFilters();
+  updateDownloadCount();
+}
+
+function normaliseSkills(v) {
+  if (!v) return [];
+  if (Array.isArray(v)) return v;
+
+  let skills = v.split("|").map(s => s.trim()).filter(Boolean);
+
+  // Heuristic: If splitting by '|' resulted in a single skill and that skill contains a comma,
+  // it's possible the data uses comma-separated values instead of pipe-separated.
+  // This makes the parsing more robust to common variations in input data.
+  if (skills.length === 1 && skills[0].includes(',')) {
+    skills = v.split(",").map(s => s.trim()).filter(Boolean);
+  }
+  return skills;
+}
+
+// ── Filter logic ──────────────────────────────────────────────────────────────
+function getChecked(name) {
+  return [...document.querySelectorAll(`input[type=checkbox][value]`)]
+    .filter(el => el.value === name || el.value.length > 0)
+    .filter(el => el.checked)
+    .map(el => el.value);
+}
+
+function getCheckedGroup(values) {
+  return values.filter(v => {
+    const el = document.querySelector(`input[type=checkbox][value="${v}"]`);
+    return el && el.checked;
+  });
+}
+
+function applyFilters() {
+  const q         = document.getElementById("search-input").value.toLowerCase().trim();
+  const role      = document.getElementById("role-input")?.value.toLowerCase().trim() || "";
+  const minScore  = parseInt(document.getElementById("score-slider").value, 10);
+  const domains   = getCheckedGroup(["CS","MBA","DATA_ANALYTICS","AI"]);
+  const sources   = getCheckedGroup(["USAJobs","Jooble"]);
+  const eras      = getCheckedGroup(["current","historical","unknown"]);
+  const tiers     = getCheckedGroup(["HIGH","MEDIUM","LOW"]);
+
+  const dateStart = document.getElementById("date-start")?.value || "";
+  const dateEnd   = document.getElementById("date-end")?.value   || "";
+
+  FILTERED_DATA = ALL_DATA.filter(r => {
+    if (!domains.includes(r.domain))           return false;
+    if (!sources.includes(r.source))           return false;
+    if (!eras.includes(r.era || "unknown"))    return false;
+    if (!tiers.includes(r.relevance_tier))     return false;
+    if ((r.relevance_score || 0) < minScore)   return false;
+
+    // Date range filter
+    const pd = r.publication_date || "";
+    if (dateStart && pd && pd < dateStart)     return false;
+    if (dateEnd   && pd && pd > dateEnd)       return false;
+    // State filter
+    const st = extractState(r.location || "");
+    if (SELECTED_STATES.size > 0 && !SELECTED_STATES.has(st)) return false;
+
+    // Role/title filter
+    if (role) {
+      const title = (r.job_title || "").toLowerCase();
+      if (!title.includes(role))               return false;
+    }
+
+    // Full-text search
+    if (q) {
+      const haystack = [
+        r.job_title, r.company, r.location,
+        (r.required_skills || []).join(" "),
+        (r.onet_skills     || []).join(" "),
+        r.description,
+      ].join(" ").toLowerCase();
+      if (!haystack.includes(q)) return false;
+    }
+    return true;
+  });
+
+  sortData();
+  PAGE = 1;
+  renderKPIs();
+  renderCharts();
+  renderTable();
+  renderPagination();
+  updateDownloadCount();
+}
+
+function sortData() {
+  const key = document.getElementById("sort-select").value;
+  FILTERED_DATA.sort((a, b) => {
+    switch(key) {
+      case "score-desc": return (b.relevance_score||0) - (a.relevance_score||0);
+      case "score-asc":  return (a.relevance_score||0) - (b.relevance_score||0);
+      case "date-desc":  return (b.publication_date||"").localeCompare(a.publication_date||"");
+      case "date-asc":   return (a.publication_date||"").localeCompare(b.publication_date||"");
+      case "title-asc":  return (a.job_title||"").localeCompare(b.job_title||"");
+      case "company-asc":return (a.company||"").localeCompare(b.company||"");
+      default: return 0;
+    }
+  });
+}
+
+function setSort(key) {
+  document.getElementById("sort-select").value = key;
+  applyFilters();
+}
+
+function resetFilters() {
+  document.querySelectorAll("input[type=checkbox]").forEach(el => { el.checked = true; });
+  document.getElementById("score-slider").value = 0;
+  document.getElementById("score-val").textContent = "0";
+  document.getElementById("search-input").value = "";
+  const ds = document.getElementById("date-start");
+  const de = document.getElementById("date-end");
+  if (ds) ds.value = "";
+  if (de) de.value = "";
+  const ri = document.getElementById("role-input");
+  if (ri) ri.value = "";
+  SELECTED_STATES.clear();
+  document.querySelectorAll(".date-quick-btn").forEach(b => b.classList.remove("active"));
+  updateDateSummary();
+  applyFilters();
+}
+
+// ── Counts ─────────────────────────────────────────────────────────────────────
+function updateCounts() {
+  const countBy = (key) => ALL_DATA.reduce((acc, r) => {
+    const v = r[key] || "unknown"; acc[v] = (acc[v]||0) + 1; return acc;
+  }, {});
+  const dc = countBy("domain"); const sc = countBy("source");
+  const ec = countBy("era");    const tc = countBy("relevance_tier");
+  ["CS","MBA","DATA_ANALYTICS","AI"].forEach(d => {
+    const el = document.getElementById(`cnt-${d}`);
+    if (el) el.textContent = dc[d]||0;
+  });
+  ["USAJobs","Jooble"].forEach(s => {
+    const el = document.getElementById(`cnt-${s}`);
+    if (el) el.textContent = sc[s]||0;
+  });
+  ["current","historical","unknown"].forEach(e => {
+    const el = document.getElementById(`cnt-${e}`);
+    if (el) el.textContent = ec[e]||0;
+  });
+  ["HIGH","MEDIUM","LOW"].forEach(t => {
+    const el = document.getElementById(`cnt-${t}`);
+    if (el) el.textContent = tc[t]||0;
+  });
+}
+
+// ── KPIs ───────────────────────────────────────────────────────────────────────
+function renderKPIs() {
+  const total    = ALL_DATA.length;
+  const filtered = FILTERED_DATA.length;
+  const current  = FILTERED_DATA.filter(r => r.era === "current").length;
+  const high     = FILTERED_DATA.filter(r => r.relevance_tier === "HIGH").length;
+  const scores   = FILTERED_DATA.map(r => r.relevance_score||0).filter(s => s > 0);
+  const avg      = scores.length ? (scores.reduce((a,b)=>a+b,0)/scores.length).toFixed(1) : "—";
+  const allSkills = new Set(FILTERED_DATA.flatMap(r => r.required_skills||[]));
+
+  document.getElementById("kpi-total").textContent    = total.toLocaleString();
+  document.getElementById("kpi-filtered").textContent = filtered.toLocaleString();
+  document.getElementById("kpi-current").textContent  = current.toLocaleString();
+  document.getElementById("kpi-high").textContent     = high.toLocaleString();
+  document.getElementById("kpi-avgscore").textContent = avg;
+  document.getElementById("kpi-skills").textContent   = allSkills.size.toLocaleString();
+
+  const rc = document.getElementById("result-count");
+  if (rc) rc.innerHTML = `Showing <strong>${filtered.toLocaleString()}</strong> of <strong>${total.toLocaleString()}</strong> postings`;
+}
+
+// ── Charts ─────────────────────────────────────────────────────────────────────
+function renderCharts() {
+  renderDomainBars();
+  renderSourceDonut();
+  renderSkillCloud();
+}
+
+function renderDomainBars() {
+  const counts = {};
+  FILTERED_DATA.forEach(r => { counts[r.domain] = (counts[r.domain]||0) + 1; });
+  const max = Math.max(...Object.values(counts), 1);
+  const order = ["CS","MBA","DATA_ANALYTICS","AI"];
+  const labels = { CS:"Computer Science", MBA:"MBA / Mgmt", DATA_ANALYTICS:"Data Analytics", AI:"AI / ML" };
+  const el = document.getElementById("domain-bars");
+  el.innerHTML = order.map(d => {
+    const n = counts[d]||0;
+    const pct = Math.round((n/max)*100);
+    return `<div class="bar-row">
+      <span class="bar-label">${labels[d]}</span>
+      <div class="bar-track"><div class="bar-fill" style="width:${pct}%;background:${DOMAIN_COLORS[d]}"></div></div>
+      <span class="bar-count">${n}</span>
+    </div>`;
+  }).join("");
+}
+
+function renderSourceDonut() {
+  const counts = {};
+  FILTERED_DATA.forEach(r => { counts[r.source||"Unknown"] = (counts[r.source||"Unknown"]||0) + 1; });
+  const total  = FILTERED_DATA.length || 1;
+  const cx=40, cy=40, r=30, stroke=10;
+  const circumference = 2 * Math.PI * r;
+  const entries = Object.entries(counts);
+  let offset = -circumference / 4;
+  const arcs = entries.map(([src, n]) => {
+    const dash  = (n / total) * circumference;
+    const gap   = circumference - dash;
+    const arc   = `<circle cx="${cx}" cy="${cy}" r="${r}" fill="none"
+      stroke="${SOURCE_COLORS[src]||'#888'}" stroke-width="${stroke}"
+      stroke-dasharray="${dash.toFixed(1)} ${gap.toFixed(1)}"
+      stroke-dashoffset="${offset.toFixed(1)}"/>`;
+    offset -= dash;
+    return arc;
+  });
+  document.getElementById("source-svg").innerHTML = arcs.join("");
+  document.getElementById("source-legend").innerHTML = entries.map(([src, n]) =>
+    `<div class="legend-item">
+      <span class="legend-dot" style="background:${SOURCE_COLORS[src]||'#888'}"></span>
+      ${src}: <strong>${n.toLocaleString()}</strong>
+    </div>`
+  ).join("");
+}
+
+function renderSkillCloud() {
+  const freq = {};
+  FILTERED_DATA.forEach(r => (r.required_skills||[]).forEach(s => { if(s) freq[s]=(freq[s]||0)+1; }));
+  const sorted = Object.entries(freq).sort((a,b)=>b[1]-a[1]).slice(0,24);
+  const max = sorted[0]?.[1] || 1;
+  const el  = document.getElementById("skill-cloud");
+  el.innerHTML = sorted.map(([sk, n]) => {
+    const cls = n >= max*.6 ? "large" : n >= max*.3 ? "med" : "";
+    return `<span class="skill-chip ${cls}" title="${n} postings">${sk}</span>`;
+  }).join("");
+}
+
+// ── Table ──────────────────────────────────────────────────────────────────────
+function renderTable() {
+  const tbody  = document.getElementById("table-body");
+  const empty  = document.getElementById("empty-state");
+  const start  = (PAGE - 1) * PAGE_SIZE;
+  const page   = FILTERED_DATA.slice(start, start + PAGE_SIZE);
+
+  if (!FILTERED_DATA.length) {
+    tbody.innerHTML = "";
+    empty.style.display = "block";
+    return;
+  }
+  empty.style.display = "none";
+
+  tbody.innerHTML = page.map(r => {
+    const dc     = DOMAIN_COLORS[r.domain] || "#888";
+    const tc     = TIER_COLORS[r.relevance_tier] || "#888";
+    const sc     = SOURCE_COLORS[r.source] || "#888";
+    const es     = ERA_STYLES[r.era] || ERA_STYLES.unknown;
+    const skills = (r.required_skills||[]).slice(0,5).join(" · ") || "—";
+    const onet   = (r.onet_skills||[]).slice(0,3).join(", ") || "—";
+    const title  = r.job_url
+      ? `<a href="${r.job_url}" target="_blank" rel="noopener">${esc(r.job_title||"Untitled")}</a>`
+      : esc(r.job_title||"Untitled");
+    return `<tr>
+      <td class="title-cell">${title}</td>
+      <td>${esc(r.company||"—")}</td>
+      <td>${esc(r.location||"—")}</td>
+      <td><span class="domain-badge" style="background:${dc}">${r.domain||"—"}</span></td>
+      <td><span class="source-badge" style="background:${sc}">${r.source||"—"}</span></td>
+      <td><span class="era-badge" style="${es}">${r.era||"unknown"}</span></td>
+      <td style="font-family:var(--font-mono);font-weight:700;color:${tc}">${r.relevance_score??0}</td>
+      <td><span class="tier-badge" style="background:${tc}">${r.relevance_tier||"—"}</span></td>
+      <td class="skills-cell" title="${esc((r.required_skills||[]).join(' · '))}">${esc(skills)}</td>
+      <td style="font-size:10px;color:var(--ink-muted);max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${esc(onet)}">${esc(onet)}</td>
+      <td style="font-family:var(--font-mono);font-size:10px;white-space:nowrap">${r.publication_date||"—"}</td>
+    </tr>`;
+  }).join("");
+}
+
+function esc(str) {
+  return String(str).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
+}
+
+// ── Pagination ─────────────────────────────────────────────────────────────────
+function renderPagination() {
+  const total   = FILTERED_DATA.length;
+  const pages   = Math.ceil(total / PAGE_SIZE) || 1;
+  const el      = document.getElementById("page-btns");
+  const info    = document.getElementById("page-info");
+  const start   = (PAGE-1)*PAGE_SIZE + 1;
+  const end     = Math.min(PAGE*PAGE_SIZE, total);
+  info.textContent = total ? `${start}–${end} of ${total.toLocaleString()}` : "0 results";
+
+  const window2 = 2;
+  let btns = [];
+
+  if (PAGE > 1) btns.push(`<button class="page-btn" onclick="goPage(${PAGE-1})">‹</button>`);
+
+  let lo = Math.max(1, PAGE - window2);
+  let hi = Math.min(pages, PAGE + window2);
+  if (lo > 1) btns.push(`<button class="page-btn" onclick="goPage(1)">1</button>${lo>2?'<span style="padding:0 4px;color:var(--ink-muted)">…</span>':""}`);
+  for (let p = lo; p <= hi; p++) {
+    btns.push(`<button class="page-btn ${p===PAGE?"active":""}" onclick="goPage(${p})">${p}</button>`);
+  }
+  if (hi < pages) btns.push(`${hi<pages-1?'<span style="padding:0 4px;color:var(--ink-muted)">…</span>':""}<button class="page-btn" onclick="goPage(${pages})">${pages}</button>`);
+  if (PAGE < pages) btns.push(`<button class="page-btn" onclick="goPage(${PAGE+1})">›</button>`);
+
+  el.innerHTML = btns.join("");
+}
+
+function goPage(p) {
+  PAGE = p;
+  renderTable();
+  renderPagination();
+  document.querySelector(".table-scroll").scrollTop = 0;
+}
+
+// ── Date Range Helpers ─────────────────────────────────────────────────────────
+function setDatePreset(preset) {
+  const today = new Date();
+  const pad   = n => String(n).padStart(2, "0");
+  const fmt   = d => `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+  const todayStr = fmt(today);
+  const ds = document.getElementById("date-start");
+  const de = document.getElementById("date-end");
+
+  document.querySelectorAll(".date-quick-btn").forEach(b => b.classList.remove("active"));
+  event.target.classList.add("active");
+
+  if (preset === "all") {
+    ds.value = ""; de.value = "";
+  } else {
+    const offsets = { "30d": 30, "90d": 90, "6m": 183, "1y": 365 };
+    const days    = offsets[preset] || 30;
+    const start   = new Date(today);
+    start.setDate(start.getDate() - days);
+    ds.value = fmt(start);
+    de.value = todayStr;
+  }
+  updateDateSummary();
+  applyFilters();
+}
+
+function updateDateSummary() {
+  const ds  = document.getElementById("date-start")?.value  || "";
+  const de  = document.getElementById("date-end")?.value    || "";
+  const el  = document.getElementById("date-range-summary");
+  if (!el) return;
+  if (!ds && !de) { el.textContent = "No date filter active"; return; }
+  const parts = [];
+  if (ds) parts.push(`from ${ds}`);
+  if (de) parts.push(`to ${de}`);
+  el.textContent = parts.join(" ");
+}
+
+// ── State Filter Helpers ───────────────────────────────────────────────────────
+function extractState(location) {
+  if (!location) return "Unknown";
+  const parts = location.split(",").map(s => s.trim()).filter(Boolean);
+  if (!parts.length) return "Unknown";
+
+  // Determine the state segment — walk right-to-left, skip country codes & zip-only tokens
+  const countryCodes = new Set(["US","USA","United States","U.S.","U.S.A."]);
+  for (let i = parts.length - 1; i >= 0; i--) {
+    const tok = parts[i].replace(/\s*\d{5}(-\d{4})?$/, "").trim(); // strip trailing zip
+    if (!tok || countryCodes.has(tok)) continue;                     // skip blanks & country names
+    // Prefer a clean 2-letter uppercase code, but accept any non-country tail segment
+    return tok;
+  }
+  return "Unknown";
+}
+
+/**
+ * US Hex Map Data - Optimized for sidebar visualization
+ */
+const US_HEX_LAYOUT = [
+  {id:'AK', r:0, c:0}, {id:'ME', r:0, c:10},
+  {id:'VT', r:1, c:9}, {id:'NH', r:1, c:10},
+  {id:'WA', r:2, c:1}, {id:'ID', r:2, c:2}, {id:'MT', r:2, c:3}, {id:'ND', r:2, c:4}, {id:'MN', r:2, c:5}, {id:'IL', r:2, c:6}, {id:'WI', r:2, c:7}, {id:'MI', r:2, c:8}, {id:'NY', r:2, c:9}, {id:'MA', r:2, c:10},
+  {id:'OR', r:3, c:1}, {id:'NV', r:3, c:2}, {id:'WY', r:3, c:3}, {id:'SD', r:3, c:4}, {id:'IA', r:3, c:5}, {id:'IN', r:3, c:6}, {id:'OH', r:3, c:7}, {id:'PA', r:3, c:8}, {id:'NJ', r:3, c:9}, {id:'CT', r:3, c:10}, {id:'RI', r:3, c:11},
+  {id:'CA', r:4, c:1}, {id:'UT', r:4, c:2}, {id:'CO', r:4, c:3}, {id:'NE', r:4, c:4}, {id:'MO', r:4, c:5}, {id:'KY', r:4, c:6}, {id:'WV', r:4, c:7}, {id:'VA', r:4, c:8}, {id:'MD', r:4, c:9}, {id:'DE', r:4, c:10},
+  {id:'AZ', r:5, c:2}, {id:'NM', r:5, c:3}, {id:'KS', r:5, c:4}, {id:'AR', r:5, c:5}, {id:'TN', r:5, c:6}, {id:'NC', r:5, c:7}, {id:'SC', r:5, c:8}, {id:'DC', r:5, c:9},
+  {id:'HI', r:6, c:0}, {id:'OK', r:6, c:4}, {id:'LA', r:6, c:5}, {id:'MS', r:6, c:6}, {id:'AL', r:6, c:7}, {id:'GA', r:6, c:8},
+  {id:'TX', r:7, c:4}, {id:'FL', r:7, c:9}
+];
+
+function buildStateFilter() {
+  const container = document.getElementById("state-map-container");
+  if (!container) return;
+
+  const available = new Set();
+  ALL_DATA.forEach(r => {
+    const st = extractState(r.location);
+    if (st && st !== "Unknown") available.add(st);
+  });
+
+  const hexW = 22, hexH = 19, pad = 4;
+  const width = 12 * (hexW * 0.75) + pad * 2;
+  const height = 8 * hexH + pad * 2;
+
+  const svg = [`<svg viewBox="0 0 ${width} ${height}" class="state-map-svg">`];
+  
+  US_HEX_LAYOUT.forEach(s => {
+    const x = s.c * (hexW * 0.75) + pad + (hexW/2);
+    const y = s.r * hexH + (s.c % 2 ? hexH / 2 : 0) + pad + (hexH/2);
+    
+    const points = [];
+    for (let i = 0; i < 6; i++) {
+      const angle = (i * 60) * Math.PI / 180;
+      points.push(`${x + (hexW/2.1) * Math.cos(angle)},${y + (hexW/2.1) * Math.sin(angle)}`);
+    }
+
+    const hasData = available.has(s.id);
+    const isActive = SELECTED_STATES.has(s.id);
+    
+    svg.push(`<g onclick="toggleState('${s.id}')" style="cursor:pointer">
+      <polygon points="${points.join(' ')}" 
+               id="map-state-${s.id}"
+               class="state-path ${hasData ? 'has-data' : ''} ${isActive ? 'active' : ''}" />
+      <text x="${x}" y="${y}" dy="3" text-anchor="middle" 
+            style="font-size:7px; font-weight:700; fill:${isActive?'#fff':'#64748b'}; pointer-events:none; font-family:var(--font-mono)">
+        ${s.id}
+      </text>
+    </g>`);
+  });
+
+  svg.push('</svg>');
+  container.innerHTML = svg.join("");
+  updateStateSelCount();
+}
+
+function toggleState(id) {
+  if (SELECTED_STATES.has(id)) {
+    SELECTED_STATES.delete(id);
+  } else {
+    SELECTED_STATES.add(id);
+  }
+  
+  // Reactive visual update
+  const el = document.getElementById(`map-state-${id}`);
+  if (el) {
+    el.classList.toggle('active');
+    const text = el.nextElementSibling;
+    if (text) text.style.fill = el.classList.contains('active') ? '#fff' : '#64748b';
+  }
+  
+  updateStateSelCount();
+  applyFilters();
+}
+
+function toggleAllStates(checked) {
+  SELECTED_STATES.clear();
+  if (checked) {
+    ALL_DATA.forEach(r => {
+      const st = extractState(r.location);
+      if (st && st !== "Unknown") SELECTED_STATES.add(st);
+    });
+  }
+  buildStateFilter();
+  applyFilters();
+}
+
+function updateStateSelCount() {
+  const el = document.getElementById("state-sel-count");
+  if (!el) return;
+  const count = SELECTED_STATES.size;
+  el.textContent = count > 0 ? `${count} selected` : "All States";
+}
+
+// ── Download Helpers ───────────────────────────────────────────────────────────
+function updateDownloadCount() {
+  const el = document.getElementById("dl-count");
+  if (el) el.textContent = FILTERED_DATA.length.toLocaleString();
+}
+
+function downloadFiltered(format) {
+  if (!FILTERED_DATA.length) { alert("No postings to export — adjust your filters."); return; }
+
+  const ds = document.getElementById("date-start")?.value || "";
+  const de = document.getElementById("date-end")?.value   || "";
+  const ts = new Date().toISOString().slice(0,10);
+  const suffix = (ds || de) ? `_${ds||"any"}_to_${de||"any"}` : `_${ts}`;
+  const filename = `job_postings_filtered${suffix}`;
+
+  if (format === "json") {
+    const payload = {
+      metadata: {
+        exported_at:   new Date().toISOString(),
+        total_records: FILTERED_DATA.length,
+        date_from:     ds || null,
+        date_to:       de || null,
+        filters_note:  "Exported from Job Postings Intelligence Dashboard",
+      },
+      postings: FILTERED_DATA,
+    };
+    triggerDownload(
+      JSON.stringify(payload, null, 2),
+      `${filename}.json`,
+      "application/json"
+    );
+  } else {
+    const csvCols = [
+      "job_title","company","location","domain","source","era",
+      "publication_date","application_close","salary","job_type","grade",
+      "relevance_score","relevance_tier","required_skills","onet_skills",
+      "onet_basic","onet_social","onet_technical","onet_systems",
+      "onet_resource","onet_complex","tech_skill_count","onet_skill_count",
+      "description","job_url","search_keyword","matched_terms","collected_at",
+    ];
+    const csvEsc = v => {
+      const s = Array.isArray(v) ? v.join("|") : String(v ?? "");
+      return s.includes(",") || s.includes('"') || s.includes("\n")
+        ? `"${s.replace(/"/g, '""')}"` : s;
+    };
+    const header = csvCols.join(",");
+    const rows   = FILTERED_DATA.map(r => csvCols.map(c => csvEsc(r[c])).join(","));
+    triggerDownload([header, ...rows].join("\n"), `${filename}.csv`, "text/csv");
+  }
+}
+
+function triggerDownload(content, filename, mimeType) {
+  const blob = new Blob([content], { type: mimeType });
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement("a");
+  a.href = url; a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+// ── BigQuery modal ─────────────────────────────────────────────────────────────
+function showBQModal() {
+  document.getElementById("bq-modal").style.display = "flex";
+}
+
+function closeBQModal() {
+  document.getElementById("bq-modal").style.display = "none";
+}
+
+async function fetchFromBQ() {
+  const url = document.getElementById("bq-url").value.trim();
+  if (!url) { alert("Enter an API URL."); return; }
+  try {
+    const res = await fetch(url);
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const data = await res.json();
+    const records = data.postings || data;
+    if (!Array.isArray(records)) throw new Error("Expected JSON array or {postings:[...]}");
+    ingestData(records);
+    closeBQModal();
+  } catch(e) {
+    alert("Failed to fetch: " + e.message);
+  }
+}
+
+// ── Init ───────────────────────────────────────────────────────────────────────
+document.addEventListener("DOMContentLoaded", () => {
+  updateDateSummary();
+  renderKPIs();
+  renderCharts();
+  renderTable();
+  renderPagination();
+  document.getElementById("bq-modal").addEventListener("click", function(e) {
+    if (e.target === this) closeBQModal();
+  });
+});
+</script>
+
+<script>
+window.addEventListener('load', function() {
+  setTimeout(function() {
+    var inp = document.getElementById('bq-url');
+    if (inp && !inp.value) inp.value = 'https://bq-proxy-799875989309.us-central1.run.app/postings';
+    if (typeof fetchFromBQ === 'function') fetchFromBQ();
+  }, 800);
+});
+</script>
+</body>
+</html>

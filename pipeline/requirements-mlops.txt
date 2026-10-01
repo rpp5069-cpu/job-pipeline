@@ -1,0 +1,12 @@
+# =============================================================================
+# pipeline/requirements-mlops.txt — for `python mlops_pipeline.py compile|run`
+# =============================================================================
+# Trimmed to what compile_pipeline()/run_pipeline() actually import locally.
+# The KFP components mlops_pipeline.py DEFINES run in their own containers
+# with their own dependencies (declared via each @component's
+# packages_to_install) — those are separate from what this environment needs
+# to compile the pipeline spec and submit it to Vertex AI.
+# =============================================================================
+kfp==2.7.0
+google-cloud-pipeline-components==2.13.1
+google-cloud-aiplatform==1.57.0

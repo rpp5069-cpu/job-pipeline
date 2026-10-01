@@ -1,0 +1,43 @@
+apiVersion: run.googleapis.com/v1
+kind: Job
+metadata:
+  name: job-collector
+  labels:
+    cloud.googleapis.com/location: us-central1
+spec:
+  template:
+    spec:
+      taskCount: 1
+      template:
+        spec:
+          containers:
+          - env:
+            - name: GCP_PROJECT_ID
+              value: job-postings-full-gcp-project
+            - name: GCS_BUCKET
+              value: job-postings-full-gcp-project-job-pipeline
+            - name: PUBSUB_TOPIC
+              value: projects/job-postings-full-gcp-project/topics/job-postings-raw
+            - name: USAJOBS_EMAIL
+              valueFrom:
+                secretKeyRef:
+                  key: latest
+                  name: USAJOBS_EMAIL
+            - name: USAJOBS_KEY
+              valueFrom:
+                secretKeyRef:
+                  key: latest
+                  name: USAJOBS_KEY
+            - name: JOOBLE_KEY
+              valueFrom:
+                secretKeyRef:
+                  key: latest
+                  name: JOOBLE_KEY
+            image: us-central1-docker.pkg.dev/job-postings-full-gcp-project/job-pipeline-repo/collector:latest
+            resources:
+              limits:
+                cpu: '2'
+                memory: 2Gi
+          maxRetries: 1
+          serviceAccountName: job-pipeline-sa@job-postings-full-gcp-project.iam.gserviceaccount.com
+          timeoutSeconds: '3600'

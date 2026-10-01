@@ -1,0 +1,41 @@
+# Credentials & secrets
+.env
+*.env
+pipeline-env.sh
+.pgpass
+*-sa-key.json
+*service-account*.json
+*credentials*.json
+*credential*.json
+*secret*.json
+
+# Data exports / large files
+MASTER_BQ_export_*.json
+*.csv
+*.parquet
+*.duckdb
+data/
+data*/
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+.eggs/
+dist/
+build/
+*.egg
+.venv/
+venv/
+env/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db

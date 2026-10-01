@@ -1,0 +1,16 @@
+# =============================================================================
+# pipeline/requirements.txt  —  Dataflow worker + launcher dependencies
+# =============================================================================
+# NOTE: apache-beam[gcp] is intentionally listed here, unlike earlier versions
+# that omitted it assuming the base image provides it.
+#
+# The python311-template-launcher-base image does NOT pre-install Beam.
+# It must be installed explicitly so the launcher can import it at startup.
+# Pin the same version used at build time to avoid any version mismatch.
+# =============================================================================
+apache-beam[gcp]==2.57.0
+google-cloud-bigquery==3.20.1
+google-cloud-storage==2.16.0
+google-cloud-pubsub==2.21.1
+beautifulsoup4==4.12.3
+requests==2.31.0

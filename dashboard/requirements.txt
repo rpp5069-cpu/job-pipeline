@@ -1,0 +1,2 @@
+google-cloud-bigquery==3.22.0
+db-dtypes==1.2.0
