@@ -1,0 +1,822 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Job Pipeline Dashboard — Penn State D.Eng.</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/plotly.js-dist-min@2.35.2/plotly.min.js"></script>
+<style>
+:root {
+  --navy:       #1F3864;
+  --blue:       #2A78D6;
+  --blue-mid:   #4B9AE8;
+  --blue-light: #93C5FD;
+  --ice:        #EEF4FD;
+  --slate:      #64748B;
+  --border:     #CBD5E1;
+  --bg:         #FFFFFF;
+  --bg-alt:     #F4F7FB;
+  --text:       #1A2332;
+  --text-muted: #64748B;
+  --high:       #1F3864;
+  --med:        #2A78D6;
+  --low:        #93C5FD;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: 'DM Sans', system-ui, sans-serif;
+  font-size: 14px;
+  color: var(--text);
+  background: var(--bg);
+  line-height: 1.5;
+}
+
+/* ── Header ── */
+.site-header {
+  background: var(--navy);
+  color: #fff;
+  padding: 20px 32px;
+}
+.site-header h1 {
+  font-size: 17px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+.site-header p {
+  font-size: 12px;
+  color: rgba(255,255,255,0.65);
+  margin-top: 3px;
+  font-weight: 300;
+}
+
+/* ── Loading ── */
+#loader {
+  padding: 60px 32px;
+  text-align: center;
+}
+.loader-label {
+  font-size: 13px;
+  color: var(--slate);
+  margin-bottom: 14px;
+}
+.progress-bar-track {
+  width: 320px;
+  max-width: 100%;
+  height: 4px;
+  background: var(--border);
+  border-radius: 2px;
+  margin: 0 auto 10px;
+  overflow: hidden;
+}
+.progress-bar-fill {
+  height: 100%;
+  width: 0%;
+  background: var(--blue);
+  border-radius: 2px;
+  transition: width 0.15s ease;
+}
+.progress-bytes {
+  font-size: 11px;
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+}
+.error-box {
+  display: none;
+  background: #FEF2F2;
+  border: 1px solid #FECACA;
+  border-radius: 6px;
+  padding: 16px 20px;
+  margin: 32px auto;
+  max-width: 560px;
+  text-align: left;
+  font-size: 13px;
+  color: #7F1D1D;
+}
+.error-box strong { display: block; margin-bottom: 4px; }
+
+/* ── Dashboard (hidden until loaded) ── */
+#dashboard { display: none; }
+
+/* ── Filters ── */
+.filter-strip {
+  background: var(--bg);
+  border-bottom: 1px solid var(--border);
+  padding: 12px 32px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  align-items: center;
+}
+.filter-group {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+.filter-label {
+  font-size: 10px;
+  font-weight: 500;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+.toggle-group {
+  display: flex;
+  gap: 2px;
+}
+.toggle-btn {
+  padding: 5px 11px;
+  border: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--slate);
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  border-radius: 3px;
+  transition: background 0.1s, color 0.1s, border-color 0.1s;
+}
+.toggle-btn:first-child { border-radius: 3px 0 0 3px; }
+.toggle-btn:last-child  { border-radius: 0 3px 3px 0; }
+.toggle-btn:not(:first-child) { border-left-color: transparent; }
+.toggle-btn.active {
+  background: var(--navy);
+  color: #fff;
+  border-color: var(--navy);
+  z-index: 1;
+  position: relative;
+}
+.toggle-btn.active + .toggle-btn { border-left-color: var(--navy); }
+
+.check-group {
+  display: flex;
+  gap: 10px;
+}
+.check-label {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  color: var(--text);
+}
+.check-label input { accent-color: var(--blue); cursor: pointer; }
+
+select.filter-select {
+  padding: 5px 10px;
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  font-family: inherit;
+  font-size: 12px;
+  color: var(--text);
+  background: var(--bg);
+  cursor: pointer;
+  outline: none;
+}
+select.filter-select:focus { border-color: var(--blue); }
+
+input.keyword-input {
+  padding: 5px 10px;
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  font-family: inherit;
+  font-size: 12px;
+  color: var(--text);
+  width: 180px;
+  outline: none;
+}
+input.keyword-input:focus { border-color: var(--blue); }
+input.keyword-input::placeholder { color: var(--text-muted); }
+
+.filter-count {
+  font-size: 11px;
+  color: var(--text-muted);
+  margin-left: auto;
+  white-space: nowrap;
+}
+.filter-count strong {
+  color: var(--navy);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ── KPI strip ── */
+.kpi-strip {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 1px;
+  background: var(--border);
+  border-top: none;
+  border-bottom: 1px solid var(--border);
+}
+.kpi-card {
+  background: var(--bg);
+  padding: 20px 24px;
+  border-left: 3px solid var(--blue);
+}
+.kpi-card:first-child { border-left-color: var(--navy); }
+.kpi-card:nth-child(2) { border-left-color: var(--blue); }
+.kpi-card:nth-child(3) { border-left-color: var(--high); }
+.kpi-card:nth-child(4) { border-left-color: var(--blue-mid); }
+.kpi-value {
+  font-size: 28px;
+  font-weight: 600;
+  color: var(--navy);
+  line-height: 1.1;
+  font-variant-numeric: tabular-nums;
+}
+.kpi-label {
+  font-size: 11px;
+  color: var(--text-muted);
+  margin-top: 4px;
+  font-weight: 400;
+}
+
+/* ── Chart grid ── */
+.chart-section {
+  background: var(--bg-alt);
+  padding: 24px 32px 32px;
+}
+.chart-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+.chart-card {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  overflow: hidden;
+}
+.chart-card.full-width {
+  grid-column: 1 / -1;
+}
+.chart-title {
+  padding: 14px 16px 0;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--navy);
+  letter-spacing: 0.01em;
+}
+.chart-plot { width: 100%; }
+
+/* ── Footer ── */
+.site-footer {
+  background: var(--navy);
+  color: rgba(255,255,255,0.55);
+  font-size: 11px;
+  padding: 14px 32px;
+  display: flex;
+  gap: 24px;
+  flex-wrap: wrap;
+}
+.site-footer strong { color: rgba(255,255,255,0.85); font-weight: 500; }
+
+/* ── Responsive ── */
+@media (max-width: 900px) {
+  .chart-grid { grid-template-columns: 1fr; }
+  .chart-card.full-width { grid-column: 1; }
+  .kpi-strip { grid-template-columns: 1fr 1fr; }
+  .filter-strip { padding: 12px 16px; }
+  .chart-section { padding: 16px; }
+  .site-header { padding: 16px; }
+}
+@media (max-width: 540px) {
+  .kpi-strip { grid-template-columns: 1fr 1fr; }
+  .kpi-value { font-size: 22px; }
+  .site-header h1 { font-size: 14px; }
+  input.keyword-input { width: 130px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .progress-bar-fill { transition: none; }
+}
+</style>
+</head>
+<body>
+
+<header class="site-header">
+  <h1>CS / MBA / Data Analytics / AI — Job Pipeline Dashboard</h1>
+  <p>Penn State Great Valley · D.Eng. Research · AI in the Workforce</p>
+</header>
+
+<div id="loader">
+  <div class="loader-label" id="loader-label">Fetching latest release…</div>
+  <div class="progress-bar-track">
+    <div class="progress-bar-fill" id="progress-fill"></div>
+  </div>
+  <div class="progress-bytes" id="progress-bytes"></div>
+  <div class="error-box" id="error-box">
+    <strong id="error-title">Could not load data</strong>
+    <span id="error-detail"></span>
+  </div>
+</div>
+
+<div id="dashboard">
+
+  <div class="filter-strip">
+    <div class="filter-group">
+      <span class="filter-label">Domain</span>
+      <div class="toggle-group" id="domain-toggle">
+        <button class="toggle-btn active" data-val="ALL">All</button>
+        <button class="toggle-btn" data-val="CS">CS</button>
+        <button class="toggle-btn" data-val="MBA">MBA</button>
+        <button class="toggle-btn" data-val="DATA_ANALYTICS">Data&nbsp;Analytics</button>
+        <button class="toggle-btn" data-val="AI">AI</button>
+      </div>
+    </div>
+    <div class="filter-group">
+      <span class="filter-label">Tier</span>
+      <div class="check-group">
+        <label class="check-label"><input type="checkbox" id="tier-high" checked> HIGH</label>
+        <label class="check-label"><input type="checkbox" id="tier-med"  checked> MEDIUM</label>
+        <label class="check-label"><input type="checkbox" id="tier-low"  checked> LOW</label>
+      </div>
+    </div>
+    <div class="filter-group">
+      <span class="filter-label">Source</span>
+      <select class="filter-select" id="source-select">
+        <option value="ALL">All sources</option>
+      </select>
+    </div>
+    <div class="filter-group">
+      <span class="filter-label">Era</span>
+      <div class="toggle-group" id="era-toggle">
+        <button class="toggle-btn active" data-val="ALL">All</button>
+        <button class="toggle-btn" data-val="current">Current</button>
+        <button class="toggle-btn" data-val="historical">Historical</button>
+      </div>
+    </div>
+    <div class="filter-group">
+      <span class="filter-label">Title search</span>
+      <input class="keyword-input" type="text" id="keyword-input" placeholder="e.g. machine learning">
+    </div>
+    <span class="filter-count"><strong id="result-count">0</strong> postings</span>
+  </div>
+
+  <div class="kpi-strip">
+    <div class="kpi-card">
+      <div class="kpi-value" id="kpi-total">—</div>
+      <div class="kpi-label">Total postings</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-value" id="kpi-current">—</div>
+      <div class="kpi-label">Current era</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-value" id="kpi-high">—</div>
+      <div class="kpi-label">HIGH tier</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-value" id="kpi-avg">—</div>
+      <div class="kpi-label">Avg relevance score</div>
+    </div>
+  </div>
+
+  <div class="chart-section">
+    <div class="chart-grid">
+      <div class="chart-card">
+        <div class="chart-title">Postings by Domain</div>
+        <div class="chart-plot" id="chart-domain"></div>
+      </div>
+      <div class="chart-card">
+        <div class="chart-title">Postings by Relevance Tier</div>
+        <div class="chart-plot" id="chart-tier"></div>
+      </div>
+      <div class="chart-card">
+        <div class="chart-title">Postings by Source</div>
+        <div class="chart-plot" id="chart-source"></div>
+      </div>
+      <div class="chart-card">
+        <div class="chart-title">Top 15 Required Skills</div>
+        <div class="chart-plot" id="chart-skills"></div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<footer class="site-footer" id="site-footer" style="display:none">
+  <span>Release: <strong id="footer-tag">—</strong></span>
+  <span>Generated: <strong id="footer-generated">—</strong></span>
+  <span>Records: <strong id="footer-records">—</strong></span>
+  <span>Sources: <strong id="footer-sources">—</strong></span>
+</footer>
+
+<script>
+(function () {
+  'use strict';
+
+  /* ── Palette ── */
+  var DOMAIN_COLORS = {
+    CS:             '#1F3864',
+    MBA:            '#2A78D6',
+    DATA_ANALYTICS: '#4B9AE8',
+    AI:             '#93C5FD'
+  };
+  var TIER_COLORS = { HIGH: '#1F3864', MEDIUM: '#2A78D6', LOW: '#93C5FD' };
+  var PLOTLY_CONFIG = { responsive: true, displayModeBar: false };
+  var PLOTLY_LAYOUT_BASE = {
+    margin:   { l: 10, r: 10, t: 10, b: 10 },
+    paper_bgcolor: 'rgba(0,0,0,0)',
+    plot_bgcolor:  'rgba(0,0,0,0)',
+    font: { family: "'DM Sans', system-ui, sans-serif", size: 12, color: '#1A2332' },
+    showlegend: false
+  };
+
+  /* ── State ── */
+  var allPostings = [];
+  var allSources  = [];
+  var filterState = { domain: 'ALL', tiers: ['HIGH','MEDIUM','LOW'], source: 'ALL', era: 'ALL', keyword: '' };
+  var latestTag = '';
+
+  /* ── Helpers ── */
+  function fmt(n) {
+    return n >= 1e6 ? (n/1e6).toFixed(1)+'M'
+         : n >= 1e3 ? (n/1e3).toFixed(1)+'K'
+         : n.toString();
+  }
+  function fmtFull(n) { return n.toLocaleString(); }
+  function el(id) { return document.getElementById(id); }
+
+  function showError(title, detail) {
+    el('loader-label').style.display    = 'none';
+    el('progress-fill').parentElement.style.display = 'none';
+    el('progress-bytes').style.display  = 'none';
+    var box = el('error-box');
+    box.style.display = 'block';
+    el('error-title').textContent  = title;
+    el('error-detail').textContent = detail;
+  }
+
+  /* ── Fetch with streaming progress ── */
+  function fetchWithProgress(url, onProgress) {
+    return fetch(url).then(function (res) {
+      if (!res.ok) throw Object.assign(new Error('HTTP ' + res.status), { status: res.status });
+      var total = parseInt(res.headers.get('content-length') || '0', 10);
+      var reader = res.body.getReader();
+      var received = 0;
+      var chunks = [];
+      function pump() {
+        return reader.read().then(function (ref) {
+          if (ref.done) {
+            var blob = new Blob(chunks);
+            return blob.text();
+          }
+          chunks.push(ref.value);
+          received += ref.value.length;
+          onProgress(received, total);
+          return pump();
+        });
+      }
+      return pump();
+    });
+  }
+
+  /* ── Init ── */
+  function init() {
+    el('loader-label').textContent = 'Fetching latest release…';
+
+    fetch('https://api.github.com/repos/rpp5069-cpu/job-pipeline/releases/latest')
+      .then(function (res) {
+        if (res.status === 404) throw new Error('not_found');
+        if (res.status === 403) throw new Error('rate_limited');
+        if (!res.ok) throw new Error('http_' + res.status);
+        return res.json();
+      })
+      .then(function (release) {
+        latestTag = release.tag_name || '';
+        var assets = release.assets || [];
+        var master = assets.find(function (a) {
+          return a.name.startsWith('MASTER_') && a.name.endsWith('.json');
+        });
+        if (!master) throw new Error('no_asset');
+        el('loader-label').textContent = 'Downloading data (' + master.name + ')…';
+        return fetchWithProgress(master.browser_download_url, function (recv, total) {
+          if (total > 0) {
+            var pct = Math.min(100, (recv / total) * 100);
+            el('progress-fill').style.width = pct + '%';
+            el('progress-bytes').textContent = mbStr(recv) + ' / ' + mbStr(total);
+          } else {
+            el('progress-bytes').textContent = mbStr(recv) + ' received…';
+          }
+        });
+      })
+      .then(function (text) {
+        el('loader-label').textContent = 'Parsing data…';
+        el('progress-fill').style.width = '100%';
+        return new Promise(function (resolve) {
+          setTimeout(function () { resolve(JSON.parse(text)); }, 0);
+        });
+      })
+      .then(function (json) {
+        onDataReady(json);
+      })
+      .catch(function (err) {
+        var msg = err.message;
+        if (msg === 'not_found')
+          showError('Repository not found or private',
+            'Make sure the repo rpp5069-cpu/job-pipeline is public and has at least one release with a MASTER_*.json asset.');
+        else if (msg === 'rate_limited')
+          showError('GitHub API rate limit reached',
+            'You have exceeded the 60 req/hour limit for unauthenticated GitHub API calls. Try again later.');
+        else if (msg === 'no_asset')
+          showError('No MASTER_*.json asset found in the latest release',
+            'The latest release on rpp5069-cpu/job-pipeline does not contain a MASTER_*.json file.');
+        else
+          showError('Failed to load data', msg);
+      });
+  }
+
+  function mbStr(bytes) {
+    return bytes >= 1048576 ? (bytes / 1048576).toFixed(1) + ' MB'
+         : bytes >= 1024    ? (bytes / 1024).toFixed(0)    + ' KB'
+         : bytes + ' B';
+  }
+
+  /* ── Data ready ── */
+  function onDataReady(json) {
+    allPostings = (json.postings || []);
+    var meta = json.metadata || {};
+
+    /* Populate source dropdown */
+    var srcSet = {};
+    allPostings.forEach(function (p) { if (p.source) srcSet[p.source] = true; });
+    allSources = Object.keys(srcSet).sort();
+    var sel = el('source-select');
+    allSources.forEach(function (s) {
+      var opt = document.createElement('option');
+      opt.value = s; opt.textContent = s;
+      sel.appendChild(opt);
+    });
+
+    /* Footer */
+    el('footer-tag').textContent       = latestTag;
+    el('footer-generated').textContent = meta.generated_at || '—';
+    el('footer-records').textContent   = fmtFull(meta.total_records || allPostings.length);
+    el('footer-sources').textContent   = (meta.sources || allSources).join(', ');
+    el('site-footer').style.display = 'flex';
+
+    /* Show dashboard */
+    el('loader').style.display     = 'none';
+    el('dashboard').style.display  = 'block';
+
+    attachFilterListeners();
+    renderAll();
+  }
+
+  /* ── Filtering ── */
+  function getFiltered() {
+    var kw = filterState.keyword.toLowerCase();
+    return allPostings.filter(function (p) {
+      if (filterState.domain !== 'ALL' && p.domain !== filterState.domain) return false;
+      if (filterState.tiers.indexOf(p.relevance_tier) === -1) return false;
+      if (filterState.source !== 'ALL' && p.source !== filterState.source) return false;
+      if (filterState.era !== 'ALL' && p.era !== filterState.era) return false;
+      if (kw && p.title && p.title.toLowerCase().indexOf(kw) === -1) return false;
+      return true;
+    });
+  }
+
+  /* ── Render all ── */
+  function renderAll() {
+    var filtered = getFiltered();
+    renderKPIs(filtered);
+    renderCharts(filtered);
+    el('result-count').textContent = fmtFull(filtered.length);
+  }
+
+  /* ── KPIs ── */
+  function renderKPIs(data) {
+    var total   = data.length;
+    var current = data.filter(function (p) { return p.era === 'current'; }).length;
+    var high    = data.filter(function (p) { return p.relevance_tier === 'HIGH'; }).length;
+    var scores  = data.map(function (p) { return p.relevance_score || 0; });
+    var avg     = scores.length ? (scores.reduce(function (a, b) { return a + b; }, 0) / scores.length).toFixed(1) : '—';
+
+    el('kpi-total').textContent   = fmt(total);
+    el('kpi-current').textContent = fmt(current);
+    el('kpi-high').textContent    = fmt(high);
+    el('kpi-avg').textContent     = avg;
+  }
+
+  /* ── Charts ── */
+  function countBy(data, key) {
+    var counts = {};
+    data.forEach(function (p) {
+      var v = p[key] || 'Unknown';
+      counts[v] = (counts[v] || 0) + 1;
+    });
+    return counts;
+  }
+
+  function renderCharts(data) {
+    renderDomainChart(data);
+    renderTierChart(data);
+    renderSourceChart(data);
+    renderSkillsChart(data);
+  }
+
+  function layout(extra) {
+    return Object.assign({}, PLOTLY_LAYOUT_BASE, extra || {});
+  }
+
+  function renderDomainChart(data) {
+    var counts = countBy(data, 'domain');
+    var domains = ['CS', 'MBA', 'DATA_ANALYTICS', 'AI'];
+    var vals = domains.map(function (d) { return counts[d] || 0; });
+    var colors = domains.map(function (d) { return DOMAIN_COLORS[d] || '#CBD5E1'; });
+
+    var trace = {
+      type: 'bar', x: domains, y: vals,
+      marker: { color: colors },
+      text: vals.map(function (v) { return fmt(v); }),
+      textposition: 'outside',
+      hovertemplate: '<b>%{x}</b><br>%{y:,} postings<extra></extra>'
+    };
+    var lay = layout({
+      margin:  { l: 40, r: 10, t: 20, b: 50 },
+      height:  220,
+      yaxis: { showgrid: true, gridcolor: '#EDF2F7', zeroline: false },
+      xaxis: { fixedrange: true },
+      uniformtext: { mode: 'hide', minsize: 9 }
+    });
+    Plotly.react('chart-domain', [trace], lay, PLOTLY_CONFIG);
+  }
+
+  function renderTierChart(data) {
+    var counts = countBy(data, 'relevance_tier');
+    var tiers  = ['HIGH', 'MEDIUM', 'LOW'];
+    var vals   = tiers.map(function (t) { return counts[t] || 0; });
+    var colors = tiers.map(function (t) { return TIER_COLORS[t]; });
+
+    var trace = {
+      type: 'bar', orientation: 'h',
+      x: vals, y: tiers,
+      marker: { color: colors },
+      text: vals.map(function (v) { return fmt(v); }),
+      textposition: 'outside',
+      hovertemplate: '<b>%{y}</b><br>%{x:,} postings<extra></extra>'
+    };
+    var lay = layout({
+      margin: { l: 70, r: 50, t: 20, b: 30 },
+      height: 220,
+      xaxis: { showgrid: true, gridcolor: '#EDF2F7', zeroline: false, fixedrange: true },
+      yaxis: { fixedrange: true }
+    });
+    Plotly.react('chart-tier', [trace], lay, PLOTLY_CONFIG);
+  }
+
+  function renderSourceChart(data) {
+    var counts = countBy(data, 'source');
+    var labels = Object.keys(counts);
+    var vals   = labels.map(function (l) { return counts[l]; });
+
+    var palette = ['#1F3864','#2A78D6','#4B9AE8','#93C5FD','#CBD5E1'];
+
+    var trace = {
+      type: 'pie',
+      labels: labels, values: vals,
+      hole: 0.5,
+      marker: { colors: palette.slice(0, labels.length) },
+      textinfo: 'percent',
+      hovertemplate: '<b>%{label}</b><br>%{value:,} postings<br>%{percent}<extra></extra>',
+      sort: true,
+      direction: 'clockwise'
+    };
+    var lay = layout({
+      height: 220,
+      margin: { l: 10, r: 10, t: 20, b: 10 },
+      showlegend: true,
+      legend: {
+        orientation: 'v', x: 0.75, y: 0.5,
+        font: { size: 11 }, bgcolor: 'rgba(0,0,0,0)'
+      }
+    });
+    Plotly.react('chart-source', [trace], lay, PLOTLY_CONFIG);
+  }
+
+  function renderSkillsChart(data) {
+    var freq = {};
+    data.forEach(function (p) {
+      var skills = (p.required_skills && p.required_skills.length)
+        ? p.required_skills
+        : (p.onet_skills || []);
+      skills.forEach(function (s) {
+        if (s) freq[s] = (freq[s] || 0) + 1;
+      });
+    });
+
+    var entries = Object.keys(freq)
+      .map(function (k) { return [k, freq[k]]; })
+      .sort(function (a, b) { return b[1] - a[1]; })
+      .slice(0, 15);
+
+    if (!entries.length) {
+      Plotly.react('chart-skills', [], layout({ height: 260, annotations: [{
+        text: 'No skill data for current filter',
+        showarrow: false, font: { color: '#64748B', size: 13 },
+        xref: 'paper', yref: 'paper', x: 0.5, y: 0.5
+      }]}), PLOTLY_CONFIG);
+      return;
+    }
+
+    var labels = entries.map(function (e) { return e[0]; });
+    var vals   = entries.map(function (e) { return e[1]; });
+
+    /* Blue gradient darkest → lightest */
+    var n = labels.length;
+    var colors = labels.map(function (_, i) {
+      var t = i / Math.max(n - 1, 1);
+      return lerpColor('#1F3864', '#93C5FD', t);
+    });
+
+    var trace = {
+      type: 'bar', orientation: 'h',
+      x: vals.slice().reverse(), y: labels.slice().reverse(),
+      marker: { color: colors.slice().reverse() },
+      text: vals.slice().reverse().map(function (v) { return fmt(v); }),
+      textposition: 'outside',
+      hovertemplate: '<b>%{y}</b><br>%{x:,} postings<extra></extra>'
+    };
+    var lay = layout({
+      margin: { l: 180, r: 60, t: 20, b: 30 },
+      height: 320,
+      xaxis: { showgrid: true, gridcolor: '#EDF2F7', zeroline: false, fixedrange: true },
+      yaxis: { fixedrange: true, automargin: true }
+    });
+    Plotly.react('chart-skills', [trace], lay, PLOTLY_CONFIG);
+  }
+
+  function lerpColor(a, b, t) {
+    var ar = parseInt(a.slice(1,3),16), ag = parseInt(a.slice(3,5),16), ab = parseInt(a.slice(5,7),16);
+    var br = parseInt(b.slice(1,3),16), bg = parseInt(b.slice(3,5),16), bb = parseInt(b.slice(5,7),16);
+    var r = Math.round(ar + (br-ar)*t);
+    var g = Math.round(ag + (bg-ag)*t);
+    var bv = Math.round(ab + (bb-ab)*t);
+    return '#' + [r,g,bv].map(function (c) { return c.toString(16).padStart(2,'0'); }).join('');
+  }
+
+  /* ── Filter listeners ── */
+  function attachFilterListeners() {
+    /* Domain toggles */
+    el('domain-toggle').querySelectorAll('.toggle-btn').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        el('domain-toggle').querySelectorAll('.toggle-btn').forEach(function (b) { b.classList.remove('active'); });
+        btn.classList.add('active');
+        filterState.domain = btn.dataset.val;
+        renderAll();
+      });
+    });
+
+    /* Tier checkboxes */
+    ['high','med','low'].forEach(function (key) {
+      el('tier-' + key).addEventListener('change', function () {
+        var map = { high: 'HIGH', med: 'MEDIUM', low: 'LOW' };
+        filterState.tiers = ['high','med','low']
+          .filter(function (k) { return el('tier-' + k).checked; })
+          .map(function (k) { return map[k]; });
+        renderAll();
+      });
+    });
+
+    /* Source dropdown */
+    el('source-select').addEventListener('change', function () {
+      filterState.source = this.value;
+      renderAll();
+    });
+
+    /* Era toggles */
+    el('era-toggle').querySelectorAll('.toggle-btn').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        el('era-toggle').querySelectorAll('.toggle-btn').forEach(function (b) { b.classList.remove('active'); });
+        btn.classList.add('active');
+        filterState.era = btn.dataset.val;
+        renderAll();
+      });
+    });
+
+    /* Keyword */
+    var kwTimer;
+    el('keyword-input').addEventListener('input', function () {
+      clearTimeout(kwTimer);
+      var val = this.value;
+      kwTimer = setTimeout(function () {
+        filterState.keyword = val;
+        renderAll();
+      }, 280);
+    });
+  }
+
+  /* ── Boot ── */
+  init();
+
+})();
+</script>
+</body>
+</html>
