@@ -429,6 +429,58 @@ input.keyword-input::placeholder { color: var(--text-muted); }
   .tour-bar { padding: 0 16px; }
   .export-panel { padding: 14px 16px; }
 }
+
+/* ── Date range picker ── */
+.date-range-group {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.date-input {
+  padding: 5px 8px;
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  font-family: inherit;
+  font-size: 12px;
+  color: var(--text);
+  background: var(--bg);
+  outline: none;
+  width: 132px;
+}
+.date-input:focus { border-color: var(--blue); }
+.date-sep   { font-size: 12px; color: var(--text-muted); }
+.date-clear-link { font-size: 11px; color: var(--blue); text-decoration: none; white-space: nowrap; }
+.date-clear-link:hover { text-decoration: underline; }
+
+/* ── Geo filter panel ── */
+.geo-filter-panel {
+  background: var(--bg);
+  border-bottom: 1px solid var(--border);
+  padding: 12px 32px 16px;
+}
+.geo-filter-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 10px;
+  flex-wrap: wrap;
+}
+.geo-filter-count {
+  font-size: 12px;
+  color: var(--navy);
+  font-weight: 500;
+}
+.geo-filter-links { display: flex; gap: 10px; margin-left: auto; }
+.geo-filter-links a { font-size: 11px; color: var(--blue); text-decoration: none; cursor: pointer; }
+.geo-filter-links a:hover { text-decoration: underline; }
+#state-map-container { overflow-x: auto; }
+#state-map-container svg { display: block; }
+.hex-state { cursor: pointer; }
+.hex-state polygon { transition: fill 0.1s; }
+@media (max-width: 540px) {
+  .date-input { width: 110px; }
+  .geo-filter-panel { padding: 10px 16px 14px; }
+}
 </style>
 </head>
 <body>
@@ -504,7 +556,28 @@ input.keyword-input::placeholder { color: var(--text-muted); }
       <span class="filter-label">Title search</span>
       <input class="keyword-input" type="text" id="keyword-input" placeholder="e.g. machine learning">
     </div>
+    <div class="filter-group">
+      <span class="filter-label">Date range</span>
+      <div class="date-range-group">
+        <input type="date" class="date-input" id="date-from" title="From date">
+        <span class="date-sep">–</span>
+        <input type="date" class="date-input" id="date-to" title="To date">
+        <a href="#" class="date-clear-link" id="date-clear">Clear</a>
+      </div>
+    </div>
     <span class="filter-count"><strong id="result-count">0</strong> postings</span>
+  </div>
+
+  <div class="geo-filter-panel" id="geo-filter-panel" style="display:none">
+    <div class="geo-filter-header">
+      <span class="filter-label">Geography</span>
+      <span class="geo-filter-count" id="geo-filter-count">All States</span>
+      <div class="geo-filter-links">
+        <a href="#" id="geo-select-all">Select All</a>
+        <a href="#" id="geo-clear">Clear</a>
+      </div>
+    </div>
+    <div id="state-map-container"></div>
   </div>
 
   <div class="kpi-strip">
@@ -621,7 +694,7 @@ input.keyword-input::placeholder { color: var(--text-muted); }
   /* ── State ── */
   var allPostings = [];
   var allSources  = [];
-  var filterState = { domain: 'ALL', tiers: ['HIGH','MEDIUM','LOW'], source: 'ALL', era: 'ALL', keyword: '' };
+  var filterState = { domain: 'ALL', tiers: ['HIGH','MEDIUM','LOW'], source: 'ALL', era: 'ALL', keyword: '', dateFrom: '', dateTo: '', states: [] };
   var latestTag = '';
 
   /* ── Helpers ── */
@@ -785,6 +858,7 @@ input.keyword-input::placeholder { color: var(--text-muted); }
     el('dashboard').style.display  = 'block';
 
     attachFilterListeners();
+    buildHexMap();
     renderAll();
     initTour();
     initSpotlight();
@@ -802,6 +876,12 @@ input.keyword-input::placeholder { color: var(--text-muted); }
       if (filterState.source !== 'ALL' && p.source !== filterState.source) return false;
       if (filterState.era !== 'ALL' && p.era !== filterState.era) return false;
       if (kw && p.title && p.title.toLowerCase().indexOf(kw) === -1) return false;
+      if (filterState.dateFrom && p.posted_date && p.posted_date < filterState.dateFrom) return false;
+      if (filterState.dateTo   && p.posted_date && p.posted_date > filterState.dateTo)   return false;
+      if (filterState.states.length > 0) {
+        var st = extractState(p.location);
+        if (!st || filterState.states.indexOf(st) === -1) return false;
+      }
       return true;
     });
   }
@@ -1040,6 +1120,40 @@ input.keyword-input::placeholder { color: var(--text-muted); }
         filterState.keyword = val;
         renderAll();
       }, 280);
+    });
+
+    /* Date range */
+    el('date-from').addEventListener('change', function () {
+      filterState.dateFrom = this.value;
+      renderAll();
+    });
+    el('date-to').addEventListener('change', function () {
+      filterState.dateTo = this.value;
+      renderAll();
+    });
+    el('date-clear').addEventListener('click', function (e) {
+      e.preventDefault();
+      el('date-from').value = '';
+      el('date-to').value   = '';
+      filterState.dateFrom  = '';
+      filterState.dateTo    = '';
+      renderAll();
+    });
+
+    /* Geo select-all / clear */
+    el('geo-select-all').addEventListener('click', function (e) {
+      e.preventDefault();
+      filterState.states = STATE_GRID.map(function (s) { return s[0]; });
+      updateHexColors();
+      updateGeoCount();
+      renderAll();
+    });
+    el('geo-clear').addEventListener('click', function (e) {
+      e.preventDefault();
+      filterState.states = [];
+      updateHexColors();
+      updateGeoCount();
+      renderAll();
     });
   }
 
@@ -1447,6 +1561,143 @@ input.keyword-input::placeholder { color: var(--text-muted); }
     XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(postRows), 'Postings');
     XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(freqRows), 'ONET_Frequency');
     XLSX.writeFile(wb, 'job-pipeline-export.xlsx');
+  }
+
+  /* ── Hex state map ── */
+  var HEX_R = 19;
+  var HEX_S3 = 1.7320508;
+
+  var STATE_GRID = [
+    ['ME',10,0],
+    ['WA',0,1],['MT',3,1],['ND',4,1],['MN',5,1],['MI',8,1],['NY',9,1],['VT',10,1],['NH',11,1],
+    ['OR',0,2],['ID',2,2],['WY',3,2],['SD',4,2],['WI',5,2],['IN',7,2],['OH',8,2],['PA',9,2],['MA',10,2],['RI',11,2],
+    ['CA',0,3],['NV',2,3],['CO',3,3],['NE',4,3],['IA',5,3],['IL',6,3],['KY',7,3],['WV',8,3],['VA',9,3],['NJ',10,3],['CT',11,3],
+    ['UT',2,4],['KS',4,4],['MO',5,4],['TN',6,4],['NC',8,4],['SC',9,4],['MD',10,4],['DE',11,4],
+    ['AZ',2,5],['NM',3,5],['OK',4,5],['AR',5,5],['AL',7,5],['GA',8,5],['DC',10,5],
+    ['TX',3,6],['LA',5,6],['MS',6,6],['FL',8,6],
+    ['AK',0,8],['HI',2,8]
+  ];
+
+  function extractState(loc) {
+    if (!loc) return null;
+    var parts = loc.split(',');
+    for (var i = parts.length - 1; i >= 0; i--) {
+      var t = parts[i].trim().replace(/\s+US$/, '').trim();
+      if (/^[A-Z]{2}$/.test(t)) {
+        for (var j = 0; j < STATE_GRID.length; j++) {
+          if (STATE_GRID[j][0] === t) return t;
+        }
+      }
+    }
+    return null;
+  }
+
+  function hexCenter(col, row) {
+    return {
+      x: (col + 0.5 * (row & 1)) * HEX_R * HEX_S3 + 22,
+      y: row * HEX_R * 1.5 + 22
+    };
+  }
+
+  function hexPoints(cx, cy) {
+    var pts = [];
+    for (var i = 0; i < 6; i++) {
+      var a = Math.PI / 180 * (60 * i + 30);
+      pts.push((cx + HEX_R * Math.cos(a)).toFixed(1) + ',' + (cy + HEX_R * Math.sin(a)).toFixed(1));
+    }
+    return pts.join(' ');
+  }
+
+  function buildHexMap() {
+    var container = el('state-map-container');
+    var maxX = 0, maxY = 0;
+    STATE_GRID.forEach(function (s) {
+      var c = hexCenter(s[1], s[2]);
+      if (c.x + HEX_R + 4 > maxX) maxX = c.x + HEX_R + 4;
+      if (c.y + HEX_R + 4 > maxY) maxY = c.y + HEX_R + 4;
+    });
+
+    var NS = 'http://www.w3.org/2000/svg';
+    var svg = document.createElementNS(NS, 'svg');
+    svg.setAttribute('viewBox', '0 0 ' + Math.ceil(maxX) + ' ' + Math.ceil(maxY));
+    svg.setAttribute('width', '100%');
+    svg.style.maxWidth = Math.ceil(maxX) + 'px';
+    svg.id = 'state-hex-svg';
+
+    STATE_GRID.forEach(function (s) {
+      var abbr = s[0];
+      var c = hexCenter(s[1], s[2]);
+      var g = document.createElementNS(NS, 'g');
+      g.classList.add('hex-state');
+      g.dataset.state = abbr;
+
+      var poly = document.createElementNS(NS, 'polygon');
+      poly.setAttribute('points', hexPoints(c.x, c.y));
+      poly.setAttribute('fill', '#E8ECF0');
+      poly.setAttribute('stroke', '#fff');
+      poly.setAttribute('stroke-width', '2');
+      poly.id = 'hex-' + abbr;
+
+      var txt = document.createElementNS(NS, 'text');
+      txt.setAttribute('x', c.x);
+      txt.setAttribute('y', c.y + 1);
+      txt.setAttribute('text-anchor', 'middle');
+      txt.setAttribute('dominant-baseline', 'middle');
+      txt.setAttribute('font-size', '7.5');
+      txt.setAttribute('font-family', "'DM Sans', system-ui, sans-serif");
+      txt.setAttribute('font-weight', '500');
+      txt.setAttribute('fill', '#64748B');
+      txt.setAttribute('pointer-events', 'none');
+      txt.id = 'hex-txt-' + abbr;
+      txt.textContent = abbr;
+
+      g.appendChild(poly);
+      g.appendChild(txt);
+      svg.appendChild(g);
+
+      g.addEventListener('click', function () { toggleState(abbr); });
+      g.addEventListener('mouseenter', function () {
+        if (filterState.states.indexOf(abbr) === -1) {
+          poly.setAttribute('fill', '#2A78D6');
+          txt.setAttribute('fill', '#fff');
+        }
+      });
+      g.addEventListener('mouseleave', function () {
+        if (filterState.states.indexOf(abbr) === -1) {
+          poly.setAttribute('fill', '#E8ECF0');
+          txt.setAttribute('fill', '#64748B');
+        }
+      });
+    });
+
+    container.appendChild(svg);
+    el('geo-filter-panel').style.display = '';
+  }
+
+  function toggleState(abbr) {
+    var idx = filterState.states.indexOf(abbr);
+    if (idx === -1) filterState.states.push(abbr);
+    else filterState.states.splice(idx, 1);
+    updateHexColors();
+    updateGeoCount();
+    renderAll();
+  }
+
+  function updateHexColors() {
+    STATE_GRID.forEach(function (s) {
+      var abbr = s[0];
+      var poly = document.getElementById('hex-' + abbr);
+      var txt  = document.getElementById('hex-txt-' + abbr);
+      if (!poly || !txt) return;
+      var sel = filterState.states.indexOf(abbr) !== -1;
+      poly.setAttribute('fill', sel ? '#1F3864' : '#E8ECF0');
+      txt.setAttribute('fill', sel ? '#fff' : '#64748B');
+    });
+  }
+
+  function updateGeoCount() {
+    var n = filterState.states.length;
+    el('geo-filter-count').textContent = n === 0 ? 'All States' : n + ' State' + (n !== 1 ? 's' : '') + ' selected';
   }
 
   /* ── Boot ── */
