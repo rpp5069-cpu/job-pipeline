@@ -482,6 +482,108 @@ input.keyword-input::placeholder { color: var(--text-muted); }
   .date-input { width: 110px; }
   .geo-filter-panel { padding: 10px 16px 14px; }
 }
+
+/* ── Job listings panel ── */
+.listings-panel {
+  background: var(--bg);
+  border-top: 1px solid var(--border);
+  padding: 24px 32px 20px;
+}
+.listings-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 14px;
+  flex-wrap: wrap;
+}
+.listings-title {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--navy);
+  margin-right: 12px;
+}
+.listings-controls { display: flex; align-items: center; gap: 8px; }
+.listings-table-wrap { overflow-x: auto; }
+.listings-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+  color: var(--text);
+}
+.listings-table thead tr { background: var(--bg-alt); }
+.listings-table th {
+  padding: 7px 10px;
+  text-align: left;
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--text-muted);
+  letter-spacing: 0.05em;
+  border-bottom: 1px solid var(--border);
+  white-space: nowrap;
+}
+.listings-table th.sortable { cursor: pointer; user-select: none; }
+.listings-table th.sortable:hover { color: var(--navy); }
+.sort-ind { font-size: 10px; margin-left: 2px; color: var(--navy); }
+.listings-table td {
+  padding: 6px 10px;
+  border-bottom: 1px solid var(--border);
+  vertical-align: middle;
+  max-width: 200px;
+}
+.listings-table tbody tr:hover { background: var(--ice); }
+.col-title { max-width: 220px; }
+.col-title a { color: var(--blue); text-decoration: none; }
+.col-title a:hover { text-decoration: underline; }
+.col-score, .col-date { white-space: nowrap; }
+.pill {
+  display: inline-block;
+  padding: 2px 7px;
+  border-radius: 10px;
+  font-size: 10px;
+  font-weight: 600;
+  white-space: nowrap;
+  color: #fff;
+}
+.skill-chip {
+  display: inline-block;
+  background: var(--bg-alt);
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  font-size: 10px;
+  padding: 1px 5px;
+  margin: 1px 2px 1px 0;
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+.skill-more { font-style: italic; }
+.listings-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 12px;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.listings-info { font-size: 11px; color: var(--text-muted); }
+.listings-pager { display: flex; align-items: center; gap: 10px; }
+.pager-btn {
+  padding: 5px 12px;
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  font-family: inherit;
+  font-size: 12px;
+  cursor: pointer;
+  background: var(--bg);
+  color: var(--text);
+}
+.pager-btn:disabled { opacity: 0.4; cursor: default; }
+.pager-btn:not(:disabled):hover { background: var(--ice); border-color: var(--blue); color: var(--navy); }
+.pager-pages { font-size: 12px; color: var(--text-muted); white-space: nowrap; }
+.listings-empty { text-align: center; padding: 24px; color: var(--text-muted); font-style: italic; }
+@media (max-width: 540px) {
+  .listings-panel { padding: 16px; }
+}
 </style>
 </head>
 <body>
@@ -654,6 +756,52 @@ input.keyword-input::placeholder { color: var(--text-muted); }
     </div>
   </div>
 
+</div>
+
+<div class="listings-panel" id="listings-panel" style="display:none">
+  <div class="listings-header">
+    <div>
+      <span class="listings-title">Job Listings</span>
+    </div>
+    <div class="listings-controls">
+      <span class="filter-label">Sort</span>
+      <select class="filter-select" id="sort-select">
+        <option value="score-desc">Score ↓</option>
+        <option value="score-asc">Score ↑</option>
+        <option value="date-desc">Date ↓</option>
+        <option value="date-asc">Date ↑</option>
+        <option value="title-asc">Title A→Z</option>
+        <option value="title-desc">Title Z→A</option>
+      </select>
+    </div>
+  </div>
+  <div class="listings-table-wrap">
+    <table class="listings-table">
+      <thead>
+        <tr>
+          <th class="col-title sortable" data-col="title">JOB TITLE <span class="sort-ind" id="sind-title"></span></th>
+          <th class="col-company">COMPANY</th>
+          <th class="col-location">LOCATION</th>
+          <th class="col-domain">DOMAIN</th>
+          <th class="col-source">SOURCE</th>
+          <th class="col-era">ERA</th>
+          <th class="col-score sortable" data-col="score">SCORE <span class="sort-ind" id="sind-score">↓</span></th>
+          <th class="col-tier">TIER</th>
+          <th class="col-skills">SKILLS</th>
+          <th class="col-date sortable" data-col="date">DATE <span class="sort-ind" id="sind-date"></span></th>
+        </tr>
+      </thead>
+      <tbody id="listings-body"></tbody>
+    </table>
+  </div>
+  <div class="listings-footer">
+    <span class="listings-info" id="listings-info">Showing 0–0 of 0 postings</span>
+    <div class="listings-pager">
+      <button class="pager-btn" id="pager-prev" disabled>← Previous</button>
+      <span class="pager-pages" id="pager-pages">Page 1 of 1</span>
+      <button class="pager-btn" id="pager-next" disabled>Next →</button>
+    </div>
+  </div>
 </div>
 
 <div class="export-panel" id="export-panel" style="display:none">
@@ -860,6 +1008,7 @@ input.keyword-input::placeholder { color: var(--text-muted); }
 
     attachFilterListeners();
     buildHexMap();
+    initListings();
     renderAll();
     initTour();
     initSpotlight();
@@ -890,8 +1039,10 @@ input.keyword-input::placeholder { color: var(--text-muted); }
   /* ── Render all ── */
   function renderAll() {
     var filtered = getFiltered();
+    listingsState.page = 1;
     renderKPIs(filtered);
     renderCharts(filtered);
+    renderListings(filtered);
     el('result-count').textContent = fmtFull(filtered.length);
     updateAnnotations(filtered);
     updateExportNote(filtered);
@@ -1562,6 +1713,127 @@ input.keyword-input::placeholder { color: var(--text-muted); }
     XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(postRows), 'Postings');
     XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(freqRows), 'ONET_Frequency');
     XLSX.writeFile(wb, 'job-pipeline-export.xlsx');
+  }
+
+  /* ── Job listings table ── */
+  var ROWS_PER_PAGE = 500;
+  var listingsState = { page: 1, sortCol: 'score', sortDir: 'desc' };
+
+  function escHtml(s) {
+    if (s == null) return '';
+    return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+
+  function pill(text, bg, fg) {
+    if (!text) return '—';
+    return '<span class="pill" style="background:' + bg + ';color:' + (fg || '#fff') + '">' + escHtml(text) + '</span>';
+  }
+
+  function domainPill(d) {
+    return pill(d, {CS:'#1F3864',MBA:'#6B4EAC',DATA_ANALYTICS:'#0D7377',AI:'#2D6A4F'}[d] || '#64748B');
+  }
+  function sourcePill(s) {
+    return pill(s, {USAJOBS:'#2A78D6',JOOBLE:'#E07B39'}[s] || '#64748B');
+  }
+  function eraPill(e) {
+    return pill(e, {current:'#2D6A4F',historical:'#6B7280'}[e] || '#6B7280');
+  }
+  function tierPill(t) {
+    if (t === 'HIGH')   return pill(t, '#1F3864');
+    if (t === 'MEDIUM') return pill(t, '#2A78D6');
+    if (t === 'LOW')    return pill(t, '#93C5FD', '#1F3864');
+    return pill(t, '#6B7280');
+  }
+
+  function skillChips(p) {
+    var skills = (p.required_skills && p.required_skills.length ? p.required_skills : (p.technical_skills || []));
+    if (!skills.length) return '—';
+    var shown = skills.slice(0, 4);
+    var rest  = skills.length - shown.length;
+    var html  = shown.map(function (s) { return '<span class="skill-chip">' + escHtml(s) + '</span>'; }).join('');
+    if (rest > 0) html += '<span class="skill-chip skill-more">+' + rest + '</span>';
+    return html;
+  }
+
+  function sortListingsData(data) {
+    var col = listingsState.sortCol, dir = listingsState.sortDir === 'asc' ? 1 : -1;
+    return data.slice().sort(function (a, b) {
+      var av, bv;
+      if (col === 'score')      { av = a.relevance_score || 0;      bv = b.relevance_score || 0; }
+      else if (col === 'date')  { av = a.posted_date || '';          bv = b.posted_date || ''; }
+      else                      { av = (a.title||'').toLowerCase();  bv = (b.title||'').toLowerCase(); }
+      return av < bv ? -dir : av > bv ? dir : 0;
+    });
+  }
+
+  function renderListings(filtered) {
+    if (!el('listings-panel') || el('listings-panel').style.display === 'none') return;
+    var sorted = sortListingsData(filtered);
+    var total  = sorted.length;
+    var pages  = Math.max(1, Math.ceil(total / ROWS_PER_PAGE));
+    if (listingsState.page > pages) listingsState.page = pages;
+    var start  = (listingsState.page - 1) * ROWS_PER_PAGE;
+    var end    = Math.min(start + ROWS_PER_PAGE, total);
+    var rows   = sorted.slice(start, end).map(function (p) {
+      var title = p.job_url
+        ? '<a href="' + escHtml(p.job_url) + '" target="_blank" rel="noopener">' + escHtml(p.title||'—') + '</a>'
+        : escHtml(p.title || '—');
+      return '<tr>' +
+        '<td class="col-title">'    + title + '</td>' +
+        '<td class="col-company">'  + escHtml(p.company||'—') + '</td>' +
+        '<td class="col-location">' + escHtml(p.location||'—') + '</td>' +
+        '<td class="col-domain">'   + domainPill(p.domain) + '</td>' +
+        '<td class="col-source">'   + sourcePill(p.source) + '</td>' +
+        '<td class="col-era">'      + eraPill(p.era) + '</td>' +
+        '<td class="col-score">'    + (p.relevance_score != null ? p.relevance_score : '—') + '</td>' +
+        '<td class="col-tier">'     + tierPill(p.relevance_tier) + '</td>' +
+        '<td class="col-skills">'   + skillChips(p) + '</td>' +
+        '<td class="col-date">'     + escHtml(p.posted_date||'—') + '</td>' +
+      '</tr>';
+    }).join('');
+    el('listings-body').innerHTML = rows ||
+      '<tr><td colspan="10" class="listings-empty">No postings match the current filters.</td></tr>';
+    var from = total === 0 ? 0 : start + 1;
+    el('listings-info').textContent = 'Showing ' + from + '–' + end + ' of ' + fmtFull(total) + ' postings';
+    el('pager-pages').textContent   = 'Page ' + listingsState.page + ' of ' + pages;
+    el('pager-prev').disabled = listingsState.page <= 1;
+    el('pager-next').disabled = listingsState.page >= pages;
+    ['title','score','date'].forEach(function (c) {
+      var ind = el('sind-' + c);
+      if (ind) ind.textContent = listingsState.sortCol === c ? (listingsState.sortDir === 'asc' ? '↑' : '↓') : '';
+    });
+  }
+
+  function initListings() {
+    el('sort-select').addEventListener('change', function () {
+      var p = this.value.split('-');
+      listingsState.sortCol = p[0]; listingsState.sortDir = p[1]; listingsState.page = 1;
+      renderListings(getFiltered());
+    });
+    document.querySelectorAll('.listings-table th.sortable').forEach(function (th) {
+      th.addEventListener('click', function () {
+        var col = th.dataset.col;
+        if (listingsState.sortCol === col) {
+          listingsState.sortDir = listingsState.sortDir === 'asc' ? 'desc' : 'asc';
+        } else {
+          listingsState.sortCol = col;
+          listingsState.sortDir = col === 'title' ? 'asc' : 'desc';
+        }
+        listingsState.page = 1;
+        var key = listingsState.sortCol + '-' + listingsState.sortDir;
+        var opt = el('sort-select').querySelector('option[value="' + key + '"]');
+        if (opt) el('sort-select').value = key;
+        renderListings(getFiltered());
+      });
+    });
+    el('pager-prev').addEventListener('click', function () {
+      if (listingsState.page > 1) { listingsState.page--; renderListings(getFiltered()); }
+    });
+    el('pager-next').addEventListener('click', function () {
+      var pages = Math.max(1, Math.ceil(getFiltered().length / ROWS_PER_PAGE));
+      if (listingsState.page < pages) { listingsState.page++; renderListings(getFiltered()); }
+    });
+    el('listings-panel').style.display = '';
   }
 
   /* ── Hex state map ── */
