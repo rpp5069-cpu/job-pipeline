@@ -8,6 +8,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/plotly.js-dist-min@2.35.2/plotly.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <style>
 :root {
   --navy:       #1F3864;
@@ -296,6 +297,138 @@ input.keyword-input::placeholder { color: var(--text-muted); }
 @media (prefers-reduced-motion: reduce) {
   .progress-bar-fill { transition: none; }
 }
+
+/* ── Chart insights ── */
+.chart-insight {
+  padding: 6px 16px 12px;
+  font-size: 11px;
+  font-style: italic;
+  color: var(--text-muted);
+  line-height: 1.4;
+  min-height: 28px;
+}
+
+/* ── Tour bar ── */
+.tour-bar {
+  background: var(--ice);
+  border-bottom: 1px solid var(--border);
+  padding: 0 32px;
+}
+.tour-toggle {
+  background: none;
+  border: none;
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--blue);
+  cursor: pointer;
+  padding: 10px 0;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.tour-body {
+  display: none;
+  padding: 14px 0 18px;
+  border-top: 1px solid var(--border);
+}
+.tour-body.open { display: block; }
+.tour-progress { font-size: 11px; color: var(--text-muted); margin-bottom: 6px; }
+.tour-text { font-size: 13px; color: var(--text); margin-bottom: 12px; font-weight: 500; max-width: 560px; }
+.tour-nav { display: flex; gap: 8px; }
+.tour-btn {
+  padding: 5px 14px;
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  background: var(--bg);
+  color: var(--text);
+}
+.tour-btn:disabled { opacity: 0.4; cursor: default; }
+.tour-btn.primary { background: var(--navy); color: #fff; border-color: var(--navy); }
+.tour-highlight {
+  box-shadow: 0 0 0 3px var(--blue), 0 0 18px rgba(42,120,214,0.25) !important;
+  border-radius: 4px;
+}
+
+/* ── Spotlight panel ── */
+.spotlight-panel {
+  display: none;
+  border-top: 1px solid var(--border);
+  padding: 16px;
+  background: var(--bg-alt);
+}
+.spotlight-panel.open { display: block; }
+.spotlight-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 10px;
+}
+.spotlight-title { font-size: 14px; font-weight: 600; color: var(--navy); }
+.spotlight-meta  { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
+.spotlight-close {
+  background: none;
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  padding: 3px 10px;
+  font-size: 11px;
+  cursor: pointer;
+  color: var(--slate);
+  font-family: inherit;
+  white-space: nowrap;
+}
+.spotlight-close:hover { background: var(--border); }
+.spotlight-pills { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 10px; }
+.skill-pill {
+  padding: 3px 9px;
+  background: var(--ice);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  font-size: 11px;
+  color: var(--navy);
+  font-weight: 500;
+}
+
+/* ── Export panel ── */
+.export-panel {
+  background: var(--bg);
+  border-top: 1px solid var(--border);
+  padding: 14px 32px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.export-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  margin-right: 4px;
+}
+.export-btn {
+  padding: 6px 14px;
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  background: var(--bg);
+  color: var(--text);
+}
+.export-btn:hover { background: var(--ice); border-color: var(--blue); color: var(--navy); }
+.export-note { font-size: 11px; color: var(--text-muted); margin-left: auto; }
+
+@media (max-width: 540px) {
+  .tour-bar { padding: 0 16px; }
+  .export-panel { padding: 14px 16px; }
+}
 </style>
 </head>
 <body>
@@ -304,6 +437,21 @@ input.keyword-input::placeholder { color: var(--text-muted); }
   <h1>CS / MBA / Data Analytics / AI — Job Pipeline Dashboard</h1>
   <p>Penn State Great Valley · D.Eng. Research · AI in the Workforce</p>
 </header>
+
+<div class="tour-bar" id="tour-bar" style="display:none">
+  <button class="tour-toggle" id="tour-toggle" aria-expanded="false">
+    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+    Guided Tour
+  </button>
+  <div class="tour-body" id="tour-body">
+    <div class="tour-progress" id="tour-progress">Step 1 of 5</div>
+    <div class="tour-text" id="tour-text"></div>
+    <div class="tour-nav">
+      <button class="tour-btn" id="tour-prev" disabled>← Previous</button>
+      <button class="tour-btn primary" id="tour-next">Next →</button>
+    </div>
+  </div>
+</div>
 
 <div id="loader">
   <div class="loader-label" id="loader-label">Fetching latest release…</div>
@@ -380,25 +528,66 @@ input.keyword-input::placeholder { color: var(--text-muted); }
 
   <div class="chart-section">
     <div class="chart-grid">
-      <div class="chart-card">
+      <div class="chart-card" id="card-domain">
         <div class="chart-title">Postings by Domain</div>
         <div class="chart-plot" id="chart-domain"></div>
+        <div class="chart-insight" id="insight-domain"></div>
       </div>
-      <div class="chart-card">
+      <div class="chart-card" id="card-tier">
         <div class="chart-title">Postings by Relevance Tier</div>
         <div class="chart-plot" id="chart-tier"></div>
+        <div class="chart-insight" id="insight-tier"></div>
       </div>
-      <div class="chart-card">
+      <div class="chart-card" id="card-source">
         <div class="chart-title">Postings by Source</div>
         <div class="chart-plot" id="chart-source"></div>
+        <div class="chart-insight" id="insight-source"></div>
       </div>
-      <div class="chart-card">
+      <div class="chart-card" id="card-era">
+        <div class="chart-title">Current vs Historical</div>
+        <div class="chart-plot" id="chart-era"></div>
+        <div class="chart-insight" id="insight-era"></div>
+      </div>
+      <div class="chart-card" id="card-trend">
+        <div class="chart-title">Monthly Postings by Domain</div>
+        <div class="chart-plot" id="chart-trend"></div>
+      </div>
+      <div class="chart-card" id="card-score">
+        <div class="chart-title">Relevance Score Distribution</div>
+        <div class="chart-plot" id="chart-score"></div>
+        <div class="chart-insight" id="insight-score"></div>
+      </div>
+      <div class="chart-card full-width" id="card-skills">
         <div class="chart-title">Top 15 Required Skills</div>
         <div class="chart-plot" id="chart-skills"></div>
+        <div class="chart-insight" id="insight-skills"></div>
+        <div class="spotlight-panel" id="spotlight-panel">
+          <div class="spotlight-header">
+            <div>
+              <div class="spotlight-title" id="spotlight-title"></div>
+              <div class="spotlight-meta" id="spotlight-meta"></div>
+            </div>
+            <button class="spotlight-close" id="spotlight-close">✕ Close</button>
+          </div>
+          <div class="chart-plot" id="chart-spotlight"></div>
+          <div class="spotlight-pills" id="spotlight-pills"></div>
+        </div>
+      </div>
+      <div class="chart-card full-width" id="card-heatmap">
+        <div class="chart-title">O*NET Skills × Domain Heatmap</div>
+        <div class="chart-plot" id="chart-heatmap"></div>
       </div>
     </div>
   </div>
 
+</div>
+
+<div class="export-panel" id="export-panel" style="display:none">
+  <span class="export-label">Export filtered data</span>
+  <button class="export-btn" id="export-csv">Download CSV</button>
+  <button class="export-btn" id="export-json">Download JSON</button>
+  <button class="export-btn" id="export-xlsx">Download XLSX</button>
+  <span class="export-note" id="export-note"></span>
 </div>
 
 <footer class="site-footer" id="site-footer" style="display:none">
@@ -568,6 +757,11 @@ input.keyword-input::placeholder { color: var(--text-muted); }
 
     attachFilterListeners();
     renderAll();
+    initTour();
+    initSpotlight();
+    initExports();
+    el('tour-bar').style.display    = 'block';
+    el('export-panel').style.display = 'flex';
   }
 
   /* ── Filtering ── */
@@ -589,6 +783,9 @@ input.keyword-input::placeholder { color: var(--text-muted); }
     renderKPIs(filtered);
     renderCharts(filtered);
     el('result-count').textContent = fmtFull(filtered.length);
+    updateAnnotations(filtered);
+    updateExportNote(filtered);
+    closeSpotlight();
   }
 
   /* ── KPIs ── */
@@ -619,7 +816,11 @@ input.keyword-input::placeholder { color: var(--text-muted); }
     renderDomainChart(data);
     renderTierChart(data);
     renderSourceChart(data);
+    renderEraChart(data);
+    renderTrendChart(data);
+    renderScoreDistChart(data);
     renderSkillsChart(data);
+    renderHeatmap(data);
   }
 
   function layout(extra) {
@@ -811,6 +1012,412 @@ input.keyword-input::placeholder { color: var(--text-muted); }
         renderAll();
       }, 280);
     });
+  }
+
+  /* ── Era donut chart ── */
+  function renderEraChart(data) {
+    var cur = 0, hist = 0;
+    data.forEach(function (p) {
+      if (p.era === 'current') cur++; else hist++;
+    });
+    var trace = {
+      type: 'pie',
+      labels: ['Current (≥ 2026)', 'Historical'],
+      values: [cur, hist],
+      hole: 0.5,
+      marker: { colors: ['#1F3864', '#93C5FD'] },
+      textinfo: 'percent',
+      hovertemplate: '<b>%{label}</b><br>%{value:,} postings<br>%{percent}<extra></extra>',
+      sort: false,
+      direction: 'clockwise'
+    };
+    var lay = layout({
+      height: 220,
+      margin: { l: 10, r: 10, t: 20, b: 10 },
+      showlegend: true,
+      legend: { orientation: 'v', x: 0.72, y: 0.5, font: { size: 11 }, bgcolor: 'rgba(0,0,0,0)' }
+    });
+    Plotly.react('chart-era', [trace], lay, PLOTLY_CONFIG);
+  }
+
+  /* ── Monthly trend line chart ── */
+  function renderTrendChart(data) {
+    var DOMAINS = ['CS', 'MBA', 'DATA_ANALYTICS', 'AI'];
+    var buckets = {};
+    data.forEach(function (p) {
+      if (!p.posted_date) return;
+      var d = new Date(p.posted_date);
+      if (isNaN(d.getTime())) return;
+      var key = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0');
+      if (!buckets[key]) { buckets[key] = { CS: 0, MBA: 0, DATA_ANALYTICS: 0, AI: 0 }; }
+      if (buckets[key][p.domain] !== undefined) buckets[key][p.domain]++;
+    });
+    var months = Object.keys(buckets).sort();
+    if (months.length < 2) {
+      Plotly.react('chart-trend', [], layout({ height: 240, annotations: [{
+        text: 'Insufficient date data for current filters',
+        showarrow: false, font: { color: '#64748B', size: 13 },
+        xref: 'paper', yref: 'paper', x: 0.5, y: 0.5
+      }]}), PLOTLY_CONFIG);
+      return;
+    }
+    var dCols = ['#1F3864','#2A78D6','#4B9AE8','#93C5FD'];
+    var traces = DOMAINS.map(function (dom, i) {
+      return {
+        type: 'scatter', mode: 'lines+markers',
+        name: dom,
+        x: months,
+        y: months.map(function (m) { return buckets[m][dom] || 0; }),
+        line: { color: dCols[i], width: 2 },
+        marker: { color: dCols[i], size: 4 },
+        hovertemplate: '<b>' + dom + '</b> %{x}: %{y:,}<extra></extra>'
+      };
+    });
+    var lay = layout({
+      height: 240,
+      margin: { l: 50, r: 10, t: 20, b: 65 },
+      showlegend: true,
+      legend: { orientation: 'h', x: 0, y: -0.3, font: { size: 11 }, bgcolor: 'rgba(0,0,0,0)' },
+      xaxis: { showgrid: false, tickangle: -30, fixedrange: true },
+      yaxis: { showgrid: true, gridcolor: '#EDF2F7', zeroline: false, fixedrange: true }
+    });
+    Plotly.react('chart-trend', traces, lay, PLOTLY_CONFIG);
+  }
+
+  /* ── Score distribution (area) ── */
+  function renderScoreDistChart(data) {
+    var freq = {};
+    for (var s = 0; s <= 12; s++) freq[s] = 0;
+    data.forEach(function (p) {
+      var sc = parseInt(p.relevance_score, 10);
+      if (!isNaN(sc) && sc >= 0 && sc <= 12) freq[sc]++;
+    });
+    var xs = [0,1,2,3,4,5,6,7,8,9,10,11,12];
+    var ys = xs.map(function (x) { return freq[x]; });
+    var trace = {
+      type: 'scatter', mode: 'lines',
+      x: xs, y: ys,
+      fill: 'tozeroy',
+      line: { color: '#2A78D6', width: 2, shape: 'spline', smoothing: 0.7 },
+      fillcolor: 'rgba(42,120,214,0.12)',
+      hovertemplate: 'Score %{x}: %{y:,} postings<extra></extra>'
+    };
+    var lay = layout({
+      height: 220,
+      margin: { l: 50, r: 10, t: 20, b: 42 },
+      xaxis: { title: { text: 'Relevance score (0–12)', standoff: 8 }, dtick: 1, range: [-0.5, 12.5], fixedrange: true },
+      yaxis: { showgrid: true, gridcolor: '#EDF2F7', zeroline: false, fixedrange: true }
+    });
+    Plotly.react('chart-score', [trace], lay, PLOTLY_CONFIG);
+  }
+
+  /* ── O*NET × Domain heatmap ── */
+  function renderHeatmap(data) {
+    var DOMAINS = ['CS', 'MBA', 'DATA_ANALYTICS', 'AI'];
+    /* Pre-index skills per domain */
+    var skillDomainCounts = {};
+    DOMAINS.forEach(function (d) { skillDomainCounts[d] = {}; });
+    data.forEach(function (p) {
+      if (!skillDomainCounts[p.domain]) return;
+      var skills = (p.required_skills && p.required_skills.length)
+        ? p.required_skills : (p.onet_skills || []);
+      skills.forEach(function (sk) {
+        if (!sk) return;
+        skillDomainCounts[p.domain][sk] = (skillDomainCounts[p.domain][sk] || 0) + 1;
+      });
+    });
+    /* Top 15 skills overall */
+    var totalFreq = {};
+    DOMAINS.forEach(function (d) {
+      Object.keys(skillDomainCounts[d]).forEach(function (sk) {
+        totalFreq[sk] = (totalFreq[sk] || 0) + skillDomainCounts[d][sk];
+      });
+    });
+    var top15 = Object.keys(totalFreq)
+      .sort(function (a, b) { return totalFreq[b] - totalFreq[a]; })
+      .slice(0, 15);
+    if (!top15.length) {
+      Plotly.react('chart-heatmap', [], layout({ height: 300 }), PLOTLY_CONFIG);
+      return;
+    }
+    var matrix = top15.map(function (sk) {
+      return DOMAINS.map(function (d) { return skillDomainCounts[d][sk] || 0; });
+    });
+    var trace = {
+      type: 'heatmap',
+      x: DOMAINS, y: top15, z: matrix,
+      colorscale: [[0,'#EEF4FD'],[0.2,'#93C5FD'],[0.5,'#2A78D6'],[1,'#1F3864']],
+      hovertemplate: '<b>%{y}</b> × %{x}<br>%{z:,} postings<extra></extra>',
+      showscale: true,
+      colorbar: { thickness: 12, len: 0.8, tickfont: { size: 10 } }
+    };
+    var lay = layout({
+      height: 400,
+      margin: { l: 190, r: 60, t: 20, b: 60 },
+      xaxis: { fixedrange: true, side: 'bottom' },
+      yaxis: { fixedrange: true, automargin: true }
+    });
+    Plotly.react('chart-heatmap', [trace], lay, PLOTLY_CONFIG);
+  }
+
+  /* ── Narrative annotations ── */
+  function updateAnnotations(data) {
+    var total = data.length || 1;
+
+    /* Domain */
+    var domC = {};
+    data.forEach(function (p) { domC[p.domain] = (domC[p.domain] || 0) + 1; });
+    var topDom = Object.keys(domC).sort(function (a, b) { return domC[b] - domC[a]; })[0] || '';
+    setInsight('insight-domain', topDom
+      ? topDom + ' represents ' + Math.round((domC[topDom] / total) * 100) + '% of postings under current filters.'
+      : '');
+
+    /* Tier */
+    var high = data.filter(function (p) { return p.relevance_tier === 'HIGH'; }).length;
+    var med  = data.filter(function (p) { return p.relevance_tier === 'MEDIUM'; }).length;
+    setInsight('insight-tier',
+      Math.round((high / total) * 100) + '% score HIGH relevance; ' + fmtFull(med) + ' additional qualify as MEDIUM.');
+
+    /* Source */
+    var srcC = {};
+    data.forEach(function (p) { if (p.source) srcC[p.source] = (srcC[p.source] || 0) + 1; });
+    var srcList = Object.keys(srcC).sort(function (a, b) { return srcC[b] - srcC[a]; });
+    if (srcList.length >= 2) {
+      var ratio = (srcC[srcList[0]] / Math.max(srcC[srcList[1]], 1)).toFixed(1);
+      setInsight('insight-source', srcList[0] + ' contributes ' + ratio + 'x more postings than ' + srcList[1] + '.');
+    } else if (srcList.length === 1) {
+      setInsight('insight-source', 'All postings are from ' + srcList[0] + ' under current filters.');
+    } else { setInsight('insight-source', ''); }
+
+    /* Era */
+    var curCount = data.filter(function (p) { return p.era === 'current'; }).length;
+    setInsight('insight-era', Math.round((curCount / total) * 100) + '% of postings are current (published ≥ Jan 2026).');
+
+    /* Score */
+    var scores = data.map(function (p) { return p.relevance_score || 0; }).sort(function (a, b) { return a - b; });
+    if (scores.length) {
+      var mean   = (scores.reduce(function (a, b) { return a + b; }, 0) / scores.length).toFixed(1);
+      var midIdx = Math.floor(scores.length / 2);
+      var median = scores.length % 2 === 0
+        ? ((scores[midIdx - 1] + scores[midIdx]) / 2).toFixed(1)
+        : scores[midIdx].toString();
+      setInsight('insight-score', 'Median relevance score: ' + median + '/12 (mean ' + mean + ').');
+    }
+
+    /* Skills */
+    var freq = {};
+    data.forEach(function (p) {
+      var sks = (p.required_skills && p.required_skills.length) ? p.required_skills : (p.onet_skills || []);
+      sks.forEach(function (s) { if (s) freq[s] = (freq[s] || 0) + 1; });
+    });
+    var topSk = Object.keys(freq).sort(function (a, b) { return freq[b] - freq[a]; })[0];
+    setInsight('insight-skills', topSk
+      ? "Top skill '" + topSk + "' appears in " + Math.round((freq[topSk] / total) * 100) + '% of filtered postings.'
+      : '');
+  }
+
+  function setInsight(id, text) {
+    var node = el(id);
+    if (node) node.textContent = text;
+  }
+
+  /* ── O*NET spotlight panel ── */
+  var currentSpotlight = null;
+
+  function initSpotlight() {
+    el('spotlight-close').addEventListener('click', closeSpotlight);
+    var chartEl = el('chart-skills');
+    if (chartEl && chartEl.on) {
+      chartEl.on('plotly_click', function (evtData) {
+        if (!evtData || !evtData.points || !evtData.points.length) return;
+        var pt   = evtData.points[0];
+        var skill = pt.y !== undefined ? pt.y : pt.x;
+        if (!skill) return;
+        if (skill === currentSpotlight) { closeSpotlight(); return; }
+        openSpotlight(skill, getFiltered());
+      });
+    }
+  }
+
+  function openSpotlight(skill, data) {
+    currentSpotlight = skill;
+    var DOMAINS = ['CS', 'MBA', 'DATA_ANALYTICS', 'AI'];
+    var total = data.length || 1;
+    var withSkill = data.filter(function (p) {
+      var sks = (p.required_skills && p.required_skills.length) ? p.required_skills : (p.onet_skills || []);
+      return sks.indexOf(skill) !== -1;
+    });
+    var count    = withSkill.length;
+    var pct      = Math.round((count / total) * 100);
+    var avgScore = count
+      ? (withSkill.reduce(function (s, p) { return s + (p.relevance_score || 0); }, 0) / count).toFixed(1)
+      : '—';
+    el('spotlight-title').textContent = skill;
+    el('spotlight-meta').textContent  = fmtFull(count) + ' postings (' + pct + '% of filtered) · avg score ' + avgScore + '/12';
+
+    var domCounts = DOMAINS.map(function (d) {
+      return withSkill.filter(function (p) { return p.domain === d; }).length;
+    });
+    Plotly.react('chart-spotlight', [{
+      type: 'bar', x: DOMAINS, y: domCounts,
+      marker: { color: ['#1F3864','#2A78D6','#4B9AE8','#93C5FD'] },
+      hovertemplate: '<b>%{x}</b>: %{y:,}<extra></extra>'
+    }], layout({
+      height: 150,
+      margin: { l: 40, r: 10, t: 10, b: 36 },
+      yaxis: { showgrid: true, gridcolor: '#EDF2F7', zeroline: false, fixedrange: true },
+      xaxis: { fixedrange: true }
+    }), PLOTLY_CONFIG);
+
+    var pills = el('spotlight-pills');
+    pills.innerHTML = '';
+    withSkill.slice(0, 20).forEach(function (p) {
+      var span = document.createElement('span');
+      span.className = 'skill-pill';
+      var title = p.title || '(no title)';
+      span.textContent = title.length > 70 ? title.substring(0, 70) + '…' : title;
+      pills.appendChild(span);
+    });
+
+    el('spotlight-panel').classList.add('open');
+    setTimeout(function () {
+      el('spotlight-panel').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }, 50);
+  }
+
+  function closeSpotlight() {
+    currentSpotlight = null;
+    var panel = el('spotlight-panel');
+    if (panel) panel.classList.remove('open');
+  }
+
+  /* ── Guided tour ── */
+  var TOUR_STEPS = [
+    { target: '.kpi-strip',    text: 'These four metrics summarize the full dataset — total postings, current-era count, HIGH-tier count, and average relevance score. They update as you change filters.' },
+    { target: '#domain-toggle', text: 'Use the domain buttons to focus on CS, MBA, Data Analytics, or AI job postings. All charts and KPIs update live.' },
+    { target: '#card-tier',    text: 'HIGH tier postings score 6–12 on the O*NET relevance rubric. MEDIUM is 2–5. These thresholds are set in the pipeline configuration.' },
+    { target: '#card-skills',  text: 'Click any bar in the Top Skills chart to open the Skill Spotlight — a cross-domain breakdown with sample job titles for that skill.' },
+    { target: '.export-panel', text: 'Download the currently filtered dataset as CSV, XLSX, or JSON. The file will reflect whatever domain, tier, and keyword filters are active.' }
+  ];
+  var tourStep = 0;
+  var tourHighlightEl = null;
+
+  function initTour() {
+    el('tour-toggle').addEventListener('click', function () {
+      var body = el('tour-body');
+      var nowOpen = body.classList.toggle('open');
+      this.setAttribute('aria-expanded', nowOpen.toString());
+      if (nowOpen) showTourStep(0);
+      else clearTourHighlight();
+    });
+    el('tour-prev').addEventListener('click', function () {
+      if (tourStep > 0) showTourStep(--tourStep);
+    });
+    el('tour-next').addEventListener('click', function () {
+      if (tourStep < TOUR_STEPS.length - 1) {
+        showTourStep(++tourStep);
+      } else {
+        clearTourHighlight();
+        el('tour-body').classList.remove('open');
+        el('tour-toggle').setAttribute('aria-expanded', 'false');
+        tourStep = 0;
+      }
+    });
+  }
+
+  function showTourStep(i) {
+    tourStep = i;
+    var step = TOUR_STEPS[i];
+    el('tour-progress').textContent  = 'Step ' + (i + 1) + ' of ' + TOUR_STEPS.length;
+    el('tour-text').textContent      = step.text;
+    el('tour-prev').disabled         = (i === 0);
+    el('tour-next').textContent      = (i === TOUR_STEPS.length - 1) ? 'Done' : 'Next →';
+    clearTourHighlight();
+    var target = document.querySelector(step.target);
+    if (target) {
+      tourHighlightEl = target;
+      target.classList.add('tour-highlight');
+      setTimeout(function () { target.scrollIntoView({ behavior: 'smooth', block: 'nearest' }); }, 50);
+    }
+  }
+
+  function clearTourHighlight() {
+    if (tourHighlightEl) { tourHighlightEl.classList.remove('tour-highlight'); tourHighlightEl = null; }
+  }
+
+  /* ── Exports ── */
+  function initExports() {
+    el('export-csv').addEventListener('click',  exportCSV);
+    el('export-json').addEventListener('click', exportJSON);
+    el('export-xlsx').addEventListener('click', exportXLSX);
+  }
+
+  function updateExportNote(data) {
+    var note = el('export-note');
+    if (note) note.textContent = fmtFull(data.length) + ' records match current filters';
+  }
+
+  function flatArr(arr) { return Array.isArray(arr) ? arr.join('|') : (arr || ''); }
+
+  function download(filename, content, mime) {
+    var a = document.createElement('a');
+    a.href = URL.createObjectURL(new Blob([content], { type: mime }));
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(a.href);
+  }
+
+  function exportCSV() {
+    var COLS = ['title','company','location','domain','era','relevance_score','relevance_tier','source','posted_date','job_url','required_skills','onet_skills'];
+    var filtered = getFiltered();
+    var header = COLS.join(',');
+    var rows = filtered.map(function (p) {
+      return COLS.map(function (c) {
+        var v = (c === 'required_skills' || c === 'onet_skills') ? flatArr(p[c]) : (p[c] != null ? p[c] : '');
+        var s = String(v).replace(/"/g, '""');
+        return /[,"\n\r]/.test(s) ? '"' + s + '"' : s;
+      }).join(',');
+    });
+    download('job-pipeline-export.csv', header + '\n' + rows.join('\n'), 'text/csv;charset=utf-8;');
+  }
+
+  function exportJSON() {
+    var filtered = getFiltered();
+    var out = {
+      metadata: { exported_at: new Date().toISOString(), record_count: filtered.length, filters: filterState, release: latestTag },
+      postings: filtered
+    };
+    download('job-pipeline-export.json', JSON.stringify(out, null, 2), 'application/json');
+  }
+
+  function exportXLSX() {
+    if (typeof XLSX === 'undefined') {
+      alert('SheetJS did not load. Downloading CSV instead.');
+      exportCSV();
+      return;
+    }
+    var COLS = ['title','company','location','domain','era','relevance_score','relevance_tier','source','posted_date','job_url','required_skills','onet_skills'];
+    var filtered = getFiltered();
+    var postRows = [COLS].concat(filtered.map(function (p) {
+      return COLS.map(function (c) {
+        return (c === 'required_skills' || c === 'onet_skills') ? flatArr(p[c]) : (p[c] != null ? p[c] : '');
+      });
+    }));
+    var freq = {};
+    filtered.forEach(function (p) {
+      var sks = (p.required_skills && p.required_skills.length) ? p.required_skills : (p.onet_skills || []);
+      sks.forEach(function (s) { if (s) freq[s] = (freq[s] || 0) + 1; });
+    });
+    var freqRows = [['Skill','Count']].concat(
+      Object.keys(freq).sort(function (a, b) { return freq[b] - freq[a]; })
+        .map(function (k) { return [k, freq[k]]; })
+    );
+    var wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(postRows), 'Postings');
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(freqRows), 'ONET_Frequency');
+    XLSX.writeFile(wb, 'job-pipeline-export.xlsx');
   }
 
   /* ── Boot ── */
