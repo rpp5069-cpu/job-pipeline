@@ -669,57 +669,86 @@ input.keyword-input::placeholder { color: var(--text-muted); }
 
   /* ── Init ── */
   function init() {
-    el('loader-label').textContent = 'Fetching latest release…';
+    el('loader-label').textContent = 'Loading data…';
 
-    fetch('https://api.github.com/repos/rpp5069-cpu/job-pipeline/releases/latest')
-      .then(function (res) {
-        if (res.status === 404) throw new Error('not_found');
-        if (res.status === 403) throw new Error('rate_limited');
-        if (!res.ok) throw new Error('http_' + res.status);
-        return res.json();
-      })
-      .then(function (release) {
-        latestTag = release.tag_name || '';
-        var assets = release.assets || [];
-        var master = assets.find(function (a) {
-          return a.name.startsWith('MASTER_') && a.name.endsWith('.json');
-        });
-        if (!master) throw new Error('no_asset');
-        el('loader-label').textContent = 'Downloading data (' + master.name + ')…';
-        return fetchWithProgress(master.browser_download_url, function (recv, total) {
-          if (total > 0) {
-            var pct = Math.min(100, (recv / total) * 100);
-            el('progress-fill').style.width = pct + '%';
-            el('progress-bytes').textContent = mbStr(recv) + ' / ' + mbStr(total);
-          } else {
-            el('progress-bytes').textContent = mbStr(recv) + ' received…';
-          }
-        });
-      })
-      .then(function (text) {
-        el('loader-label').textContent = 'Parsing data…';
-        el('progress-fill').style.width = '100%';
-        return new Promise(function (resolve) {
-          setTimeout(function () { resolve(JSON.parse(text)); }, 0);
-        });
-      })
-      .then(function (json) {
-        onDataReady(json);
-      })
-      .catch(function (err) {
-        var msg = err.message;
-        if (msg === 'not_found')
-          showError('Repository not found or private',
-            'Make sure the repo rpp5069-cpu/job-pipeline is public and has at least one release with a MASTER_*.json asset.');
-        else if (msg === 'rate_limited')
-          showError('GitHub API rate limit reached',
-            'You have exceeded the 60 req/hour limit for unauthenticated GitHub API calls. Try again later.');
-        else if (msg === 'no_asset')
-          showError('No MASTER_*.json asset found in the latest release',
-            'The latest release on rpp5069-cpu/job-pipeline does not contain a MASTER_*.json file.');
-        else
-          showError('Failed to load data', msg);
+    /* ── Priority 1: same-origin data/latest.json (GitHub Pages, no CORS) ── */
+    fetchWithProgress('data/latest.json', onProgress)
+      .then(parseText)
+      .then(function (json) { onDataReady(json); })
+      .catch(function () {
+        /* ── Priority 2: GitHub Releases API → asset.url with Accept header ── */
+        el('loader-label').textContent = 'Fetching latest release from GitHub…';
+        el('progress-fill').style.width = '0%';
+        el('progress-bytes').textContent = '';
+
+        fetch('https://api.github.com/repos/rpp5069-cpu/job-pipeline/releases/latest')
+          .then(function (res) {
+            if (res.status === 404) throw new Error('not_found');
+            if (res.status === 403) throw new Error('rate_limited');
+            if (!res.ok) throw new Error('http_' + res.status);
+            return res.json();
+          })
+          .then(function (release) {
+            latestTag = release.tag_name || '';
+            var master = (release.assets || []).find(function (a) {
+              return a.name.startsWith('MASTER_') && a.name.endsWith('.json');
+            });
+            if (!master) throw new Error('no_asset');
+            el('loader-label').textContent = 'Downloading ' + master.name + '…';
+            /* Use asset.url + Accept header to avoid objects.githubusercontent.com redirect */
+            return fetch(master.url, { headers: { Accept: 'application/octet-stream' } })
+              .then(function (res) {
+                if (!res.ok) throw new Error('asset_http_' + res.status);
+                var total = parseInt(res.headers.get('content-length') || '0', 10);
+                var reader = res.body.getReader();
+                var received = 0, chunks = [];
+                function pump() {
+                  return reader.read().then(function (ref) {
+                    if (ref.done) return new Blob(chunks).text();
+                    chunks.push(ref.value);
+                    received += ref.value.length;
+                    onProgress(received, total);
+                    return pump();
+                  });
+                }
+                return pump();
+              });
+          })
+          .then(parseText)
+          .then(function (json) { onDataReady(json); })
+          .catch(function (err) {
+            var msg = err.message;
+            if (msg === 'not_found')
+              showError('Repository not found or private',
+                'Make sure rpp5069-cpu/job-pipeline is public and has at least one release with a MASTER_*.json asset.');
+            else if (msg === 'rate_limited')
+              showError('GitHub API rate limit reached',
+                'Exceeded 60 req/hour for unauthenticated GitHub API calls. Try again later.');
+            else if (msg === 'no_asset')
+              showError('No MASTER_*.json asset in the latest release',
+                'The latest release on rpp5069-cpu/job-pipeline does not contain a MASTER_*.json file.');
+            else
+              showError('Both data sources failed',
+                msg + ' — If opening this file from disk, serve it over HTTP (e.g. python -m http.server) rather than directly from the filesystem.');
+          });
       });
+  }
+
+  function onProgress(recv, total) {
+    if (total > 0) {
+      el('progress-fill').style.width = Math.min(100, (recv / total) * 100) + '%';
+      el('progress-bytes').textContent = mbStr(recv) + ' / ' + mbStr(total);
+    } else {
+      el('progress-bytes').textContent = mbStr(recv) + ' received…';
+    }
+  }
+
+  function parseText(text) {
+    el('loader-label').textContent = 'Parsing data…';
+    el('progress-fill').style.width = '100%';
+    return new Promise(function (resolve) {
+      setTimeout(function () { resolve(JSON.parse(text)); }, 0);
+    });
   }
 
   function mbStr(bytes) {
