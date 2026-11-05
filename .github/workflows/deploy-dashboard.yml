@@ -1,0 +1,38 @@
+name: Deploy Dashboard
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'dashboard/**'
+
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Fetch latest data from gh-pages
+        run: |
+          git fetch origin gh-pages
+          mkdir -p data
+          git show origin/gh-pages:data/latest.json > data/latest.json 2>/dev/null || echo "No existing data found, skipping"
+
+      - name: Build publish root
+        run: |
+          cp dashboard/index.html index.html
+
+      - name: Deploy to GitHub Pages
+        uses: peaceiris/actions-gh-pages@v3
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: .
+          keep_files: true
+          exclude_assets: '.github,*.ipynb,*.py,*.sh,*.json.example'
