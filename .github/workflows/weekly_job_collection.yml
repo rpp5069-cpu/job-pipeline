@@ -67,3 +67,16 @@ jobs:
           publish_branch: gh-pages
           force_orphan: true
           keep_files: true
+      - name: Fail the run if collection was incomplete
+        # Runs after the release and dashboard deploy, so partial data is still published,
+        # but the run shows as failed instead of silently succeeding (as on Nov 16 and Nov 23).
+        run: |
+          python - <<'PY'
+          import json, sys
+          s = json.load(open('job_outputs/outputs/collection_status.json'))
+          print(json.dumps(s, indent=2))
+          if s.get('incomplete'):
+              print('::error::Collection incomplete. Empty source/domains:', s.get('empty_source_domains'),
+                    '| Jooble:', s.get('Jooble_requests'))
+              sys.exit(1)
+          PY
