@@ -142,22 +142,22 @@
       }
     ],
     "corpus_file": "corpus_20261123.json.gz",
-    "corpus_sha256": "88f574251f6e2f1c3551e45561a59f677c40df787ad66240058e2c12ce7f0083",
+    "corpus_sha256": "1489b5181e97f6b9fe52491dcc8e5d61383387ab1fa30cc16d8a7e5ce1583288",
     "dedupe": "hash_id = sha1(title|company|location)[:12]; first-seen version kept",
     "inclusion": "Postings with at least one O*NET skill under the label rule in use",
     "postings_by_stratum_and_domain_clean_labels": {
-      "Jooble|AI": 14295,
-      "Jooble|CS": 15992,
-      "Jooble|DATA_ANALYTICS": 9614,
-      "Jooble|MBA": 11450,
-      "USAJobs|AI": 450,
-      "USAJobs|CS": 3916,
-      "USAJobs|DATA_ANALYTICS": 1244,
-      "USAJobs|MBA": 5168
+      "Jooble|AI": 13010,
+      "Jooble|CS": 14573,
+      "Jooble|DATA_ANALYTICS": 8820,
+      "Jooble|MBA": 10038,
+      "USAJobs|AI": 326,
+      "USAJobs|CS": 2787,
+      "USAJobs|DATA_ANALYTICS": 805,
+      "USAJobs|MBA": 3301
     }
   },
   "labels": {
-    "primary": "onet_clean: the pipeline's ONET_SKILLS_MAP triggers matched as whole words (start-of-word boundary; triggers of 3 characters or fewer also end-of-word) on the stored title, description and extracted skills.",
+    "primary": "onet_clean: mapper v4 (see amendment 1) applied to the stored title, description and extracted skills.",
     "sensitivity": "onet_stored: the pipeline's original substring-matched labels (USAJobs mapped on full text before truncation, but contaminated by substring matches such as 'script' in 'description').",
     "known_limits": "USAJobs text was stored truncated to 600 characters, so clean labels miss skills mentioned later in those postings. Jooble descriptions are ~280-character API snippets."
   },
@@ -230,5 +230,24 @@
     "rule": "Job titles grouped into families by ordered keyword rules (as in the Nov 22 notebook)",
     "limitation": "No SOC codes; SCI/OCI depend on this grouping. SOC mapping is listed as future work."
   },
-  "amendments": []
+  "amendments": [
+    {
+      "n": 1,
+      "date_utc": "2026-11-24T01:03:58Z",
+      "before_results": true,
+      "change": "Clean labels now use mapper v4 (onet_map_v4.py): (a) every trigger must start at a word boundary; acronym and name triggers (any capital letter, or 3 characters or fewer) must also end at one; (b) trigger fixes: Programming 'develop' -> 'develop software', 'software developer', 'application development', 'develop applications', 'develop code'; 'Go' -> 'Golang'; Instructing 'train' -> 'train staff', 'train employees', 'train users', 'train new', 'provide training', 'conduct training', 'deliver training', 'trainer'; Instructing 'SME' removed; Reading Comprehension 'parse' removed.",
+      "reason": "Reviewing the full trigger list before running any test showed the frozen start-of-word rule still matched 'Scala' inside 'scalable', and that 'develop', 'Go', 'train', 'SME' and 'parse' fire on unrelated common senses in this corpus (develop budgets, government, train models, subject-matter expert, parse data). The same v4 dictionary is applied in the collection pipeline going forward.",
+      "corpus_sha256_new": "1489b5181e97f6b9fe52491dcc8e5d61383387ab1fa30cc16d8a7e5ce1583288",
+      "postings_by_stratum_and_domain_clean_labels_new": {
+        "Jooble|AI": 13010,
+        "Jooble|CS": 14573,
+        "Jooble|DATA_ANALYTICS": 8820,
+        "Jooble|MBA": 10038,
+        "USAJobs|AI": 326,
+        "USAJobs|CS": 2787,
+        "USAJobs|DATA_ANALYTICS": 805,
+        "USAJobs|MBA": 3301
+      }
+    }
+  ]
 }
