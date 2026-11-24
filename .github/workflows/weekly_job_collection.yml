@@ -48,10 +48,6 @@ jobs:
             echo "No MASTER JSON found in job_outputs/outputs/"
             exit 1
           fi
-      - name: Upload master files to Google Drive
-        env:
-          GDRIVE_FOLDER_ID: ${{ secrets.GDRIVE_FOLDER_ID }}
-        run: python upload_to_drive.py
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
@@ -67,7 +63,19 @@ jobs:
           publish_branch: gh-pages
           force_orphan: true
           keep_files: true
+      - name: Upload master files to Google Drive
+        # After the release, so a Drive problem can never block publishing the data.
+        # Uploads as the folder owner via OAuth (see scripts/get_drive_refresh_token.py); a failure is
+        # reported on the run but does not fail it.
+        continue-on-error: true
+        env:
+          GDRIVE_FOLDER_ID: ${{ secrets.GDRIVE_FOLDER_ID }}
+          GDRIVE_OAUTH_CLIENT_ID: ${{ secrets.GDRIVE_OAUTH_CLIENT_ID }}
+          GDRIVE_OAUTH_CLIENT_SECRET: ${{ secrets.GDRIVE_OAUTH_CLIENT_SECRET }}
+          GDRIVE_OAUTH_REFRESH_TOKEN: ${{ secrets.GDRIVE_OAUTH_REFRESH_TOKEN }}
+        run: python upload_to_drive.py
       - name: Fail the run if collection was incomplete
+        if: always()
         # Runs after the release and dashboard deploy, so partial data is still published,
         # but the run shows as failed instead of silently succeeding (as on Nov 16 and Nov 23).
         run: |
