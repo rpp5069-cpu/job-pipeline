@@ -1,0 +1,43 @@
+name: Test Drive upload
+
+# Manual only. Uploads one small test file with the repository's Drive secrets,
+# without collecting any job postings (no USAJobs or Jooble quota used).
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  drive-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install Drive client
+        run: pip install google-auth google-api-python-client
+      - name: Check which secrets are set (values are never printed)
+        env:
+          GDRIVE_FOLDER_ID: ${{ secrets.GDRIVE_FOLDER_ID }}
+          GDRIVE_OAUTH_CLIENT_ID: ${{ secrets.GDRIVE_OAUTH_CLIENT_ID }}
+          GDRIVE_OAUTH_CLIENT_SECRET: ${{ secrets.GDRIVE_OAUTH_CLIENT_SECRET }}
+          GDRIVE_OAUTH_REFRESH_TOKEN: ${{ secrets.GDRIVE_OAUTH_REFRESH_TOKEN }}
+        run: |
+          for v in GDRIVE_FOLDER_ID GDRIVE_OAUTH_CLIENT_ID GDRIVE_OAUTH_CLIENT_SECRET GDRIVE_OAUTH_REFRESH_TOKEN; do
+            if [ -n "${!v}" ]; then echo "✓ $v is set"; else echo "::error::$v is missing"; missing=1; fi
+          done
+          [ -z "$missing" ]
+      - name: Write a test file
+        run: |
+          mkdir -p job_outputs/outputs
+          printf '{"drive_test": "github-actions", "run_id": "%s", "at": "%s"}\n' "${{ github.run_id }}" "$(date -u +%FT%TZ)" > job_outputs/outputs/collection_status.json
+          cat job_outputs/outputs/collection_status.json
+      - name: Upload with the repository secrets
+        env:
+          GDRIVE_FOLDER_ID: ${{ secrets.GDRIVE_FOLDER_ID }}
+          GDRIVE_OAUTH_CLIENT_ID: ${{ secrets.GDRIVE_OAUTH_CLIENT_ID }}
+          GDRIVE_OAUTH_CLIENT_SECRET: ${{ secrets.GDRIVE_OAUTH_CLIENT_SECRET }}
+          GDRIVE_OAUTH_REFRESH_TOKEN: ${{ secrets.GDRIVE_OAUTH_REFRESH_TOKEN }}
+        run: python upload_to_drive.py
