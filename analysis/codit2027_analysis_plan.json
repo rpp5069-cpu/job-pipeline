@@ -1,0 +1,253 @@
+{
+  "title": "CoDIT 2027 bridge-skill validation: analysis plan",
+  "frozen_at_utc": "2026-11-24T01:01:06Z",
+  "status": "Frozen before any validation test was run on this corpus. Any later change is logged under 'amendments' with its reason and date; results are reported whatever they show.",
+  "history_disclosed": [
+    "A first analysis ran on the single Nov 6, 2026 snapshot (6,925 postings). Pass marks for T2-T5 were written into that notebook before it was first executed (Nov 22).",
+    "T1's second condition (each of a metric's top-4 skills must beat its own chance level) was added after that first run, because a bridge claim asserts exactly that. It is disclosed here rather than presented as pre-planned.",
+    "The data decisions below (cumulative corpus, clean labels, source strata) were made after that first run, because it exposed measurement problems: 600-character USAJobs truncation, Jooble snippets, substring trigger matches, and Jooble HTTP 429 failures in the Nov 16 and Nov 23 runs. They were fixed before any test ran on this corpus."
+  ],
+  "data": {
+    "corpus": "Cumulative union of every weekly MASTER JSON release of rpp5069-cpu/job-pipeline, 2026-06-27 to 2026-11-23 (26 files)",
+    "release_files": [
+      {
+        "file": "MASTER_20260627_0445.json",
+        "sha256": "19222bff183e5dbdbdd862b569a5046af4179234dd802607ae22786863730c76",
+        "postings": 6809
+      },
+      {
+        "file": "MASTER_20260629_1714.json",
+        "sha256": "6855016edaf7fd572f9209953b9d092c8ec8e7e6d96a731f0665b702e06a3492",
+        "postings": 6822
+      },
+      {
+        "file": "MASTER_20260706_1718.json",
+        "sha256": "bb32d92077ae2f2924cc0bd5e7bef5b4e7cf6566e6276a63c94953b59e37f163",
+        "postings": 6858
+      },
+      {
+        "file": "MASTER_20260713_1341.json",
+        "sha256": "8049428ff5b21134e4efef6e7a5b98934fdb7f526055e9faba2aaa36ec1d013d",
+        "postings": 6771
+      },
+      {
+        "file": "MASTER_20260720_1324.json",
+        "sha256": "05ea508466674eb80eddd4264faaf9004889fb998a35c1527885c6d76db62e05",
+        "postings": 6992
+      },
+      {
+        "file": "MASTER_20260727_0937.json",
+        "sha256": "524d6783403448e9954caa9dd170e0f40eb5f172b0b0941e5aa728a138c706bd",
+        "postings": 6605
+      },
+      {
+        "file": "MASTER_20260803_0930.json",
+        "sha256": "483bea501137c9382adf610713d337a874bfed0e7d9fba246d6c4e1dc7ce78e3",
+        "postings": 6490
+      },
+      {
+        "file": "MASTER_20260810_0717.json",
+        "sha256": "8f03326686d5f794fe9ed7a96235cac2972f6755406dc8d36fb3a70e0c2211ea",
+        "postings": 6807
+      },
+      {
+        "file": "MASTER_20260817_0639.json",
+        "sha256": "201533dab79fdcfebcaa3f3b271627fd0bfe4f7adaa4fafc43b0ccf25736ae8a",
+        "postings": 6900
+      },
+      {
+        "file": "MASTER_20260824_0642.json",
+        "sha256": "2c8031e461d74f8d46a32838aa6911e113dc8af1aa5ed89378caced7e01f620c",
+        "postings": 6845
+      },
+      {
+        "file": "MASTER_20260831_1221.json",
+        "sha256": "6fdfc9b640346caef94f36d6425cf9a3438e344715d87933bfcf60696b1e3941",
+        "postings": 6981
+      },
+      {
+        "file": "MASTER_20260907_1115.json",
+        "sha256": "5537ecf754b356d8d703a2b95315e7732a155d3cca725aece8067a0cc8a4ac14",
+        "postings": 6944
+      },
+      {
+        "file": "MASTER_20260914_1125.json",
+        "sha256": "3ed44b0b8f027b2702ec651d43531f2310a84daf4e70cf4e9b7ebca0833fd270",
+        "postings": 6727
+      },
+      {
+        "file": "MASTER_20260921_1139.json",
+        "sha256": "1a10406cf3057844c1fbb5d127565817fa60b4ef735c7aaca08ede276e369995",
+        "postings": 6806
+      },
+      {
+        "file": "MASTER_20260928_1234.json",
+        "sha256": "b164ddced72ce08e953c820e80eedbdbd009be972c292a38523b4dd7de9ee12d",
+        "postings": 6815
+      },
+      {
+        "file": "MASTER_20261005_1315.json",
+        "sha256": "dcbc8c2554779f61402d28eb896396793dc9b573834254f4ae2644e4e107afaa",
+        "postings": 6651
+      },
+      {
+        "file": "MASTER_20261012_1405.json",
+        "sha256": "b0d06113bde34c9b236081991780e98b58da1c09290542a5d1126aa8fb91d9ca",
+        "postings": 6757
+      },
+      {
+        "file": "MASTER_20261019_1146.json",
+        "sha256": "913e60fe7e6d50c4d07bf40e3c22595eebbe95f0a4504034891709e71906011c",
+        "postings": 6729
+      },
+      {
+        "file": "MASTER_20261026_1202.json",
+        "sha256": "72b02780f9c02d1295ed9380381d6a03115468b1669e2333b4784dd51587d6b0",
+        "postings": 6898
+      },
+      {
+        "file": "MASTER_20261102_1426.json",
+        "sha256": "a393c6a6f2132f3268ee14471f9e12cb31562968128044f22f4b5f36f863c2d3",
+        "postings": 6841
+      },
+      {
+        "file": "MASTER_20261105_0437.json",
+        "sha256": "5d8aa9fb409b05aebf3d651836a478219b4e96808ca76c0b1fe404677b2e4a50",
+        "postings": 6918
+      },
+      {
+        "file": "MASTER_20261105_0439.json",
+        "sha256": "4a39aceb01f3d04b25596c14527a3bd72f41d89126e3cb64cec71f58dfe9c71c",
+        "postings": 6917
+      },
+      {
+        "file": "MASTER_20261105_0449.json",
+        "sha256": "68cd27e42e94686e4ef9a376ff93c4a6cfb424e87a2a99072fd309b7ae3e8b45",
+        "postings": 6925
+      },
+      {
+        "file": "MASTER_20261109_1452.json",
+        "sha256": "bf42b151e85386591a63f907289195ba1fb84fd99069c912e5db1957083c4997",
+        "postings": 6765
+      },
+      {
+        "file": "MASTER_20261116_1428.json",
+        "sha256": "c25fea08a8bcc4fec821c482cf06dca9657c4c275f6653df6ae284bce6fc0ece",
+        "postings": 3997
+      },
+      {
+        "file": "MASTER_20261123_1701.json",
+        "sha256": "a4115ca44ec52d91c3781f9940099d47414104d92695e9df745c2084d976e0a0",
+        "postings": 3960
+      }
+    ],
+    "corpus_file": "corpus_20261123.json.gz",
+    "corpus_sha256": "1489b5181e97f6b9fe52491dcc8e5d61383387ab1fa30cc16d8a7e5ce1583288",
+    "dedupe": "hash_id = sha1(title|company|location)[:12]; first-seen version kept",
+    "inclusion": "Postings with at least one O*NET skill under the label rule in use",
+    "postings_by_stratum_and_domain_clean_labels": {
+      "Jooble|AI": 13010,
+      "Jooble|CS": 14573,
+      "Jooble|DATA_ANALYTICS": 8820,
+      "Jooble|MBA": 10038,
+      "USAJobs|AI": 326,
+      "USAJobs|CS": 2787,
+      "USAJobs|DATA_ANALYTICS": 805,
+      "USAJobs|MBA": 3301
+    }
+  },
+  "labels": {
+    "primary": "onet_clean: mapper v4 (see amendment 1) applied to the stored title, description and extracted skills.",
+    "sensitivity": "onet_stored: the pipeline's original substring-matched labels (USAJobs mapped on full text before truncation, but contaminated by substring matches such as 'script' in 'description').",
+    "known_limits": "USAJobs text was stored truncated to 600 characters, so clean labels miss skills mentioned later in those postings. Jooble descriptions are ~280-character API snippets."
+  },
+  "strata": {
+    "design": "Jooble (commercial) and USAJobs (federal) are analysed separately with identical methods. No pooled analysis is primary.",
+    "skill_level_rule": "A skill is reported as a validated bridge only if, in BOTH strata, it is a top-4 broker by directed betweenness on the exact-null backbone at tau = 0.30 AND a top-4 broker in at least 75% of bootstrap resamples.",
+    "exploratory": "Any analysis not listed in this plan (e.g., AI-domain-only subsets, time trends) is labelled exploratory."
+  },
+  "metrics": {
+    "baseline_v1": [
+      "Frequency (reference)",
+      "Betweenness, PPMI as path length (submitted Table I)",
+      "Betweenness, 1/PPMI as path length",
+      "Brokerage, negative Burt's constraint"
+    ],
+    "v2": "Directed betweenness on the hypergeometric backbone (kept to document its failure)",
+    "v3": "Directed betweenness on the exact-null backbone",
+    "complexity": "Skill Complexity Index, Fitness-Complexity map (Method of Reflection reported alongside)",
+    "role_of_v1": "The v1 metrics are kept as the failing baseline: showing whether they pass is part of the contribution."
+  },
+  "tests": {
+    "T1": {
+      "definition": "Spearman rho between the metric on real data and its mean on exact-null data; and whether each of the metric's top-4 skills exceeds its own null 95th percentile",
+      "pass": "rho < 0.5 AND all four top-4 skills above their null 95th percentile"
+    },
+    "T2": {
+      "definition": "Median Spearman rho between full-sample and bootstrap-resample rankings",
+      "pass": "rho >= 0.8"
+    },
+    "T3": {
+      "definition": "Median Spearman rho between rankings from two disjoint random halves",
+      "pass": "rho >= 0.7"
+    },
+    "T4": {
+      "definition": "Spearman rho between the metric computed on Jooble and on USAJobs; no structure in either source counts as a fail",
+      "pass": "rho >= 0.5"
+    },
+    "T5": {
+      "definition": "Spearman rho between the metric and each skill's salary premium estimated in the same stratum",
+      "pass": "rho > 0 AND p < 0.05"
+    }
+  },
+  "parameters": {
+    "tau": 0.3,
+    "tau_sensitivity": [
+      0.2,
+      0.25,
+      0.4
+    ],
+    "alpha_per_pair": "0.05 / 595 (Bonferroni)",
+    "null_model": "curveball (exact posting-size and skill-frequency margins), compiled sampler; burn-in 10N trades, thinning 2N",
+    "N_NULL": 1000,
+    "N_NULL_GRAPH": 200,
+    "N_NULL_STORE": 30,
+    "N_NULL_RESAMPLE": 200,
+    "N_BOOT": 100,
+    "N_SPLIT": 100,
+    "SEED": 2027,
+    "occupation_family_min_postings": "30 in a full stratum; max(10, round(30 * n / N)) in subsamples"
+  },
+  "salary_model": {
+    "spec": "OLS of log annualised posted salary on the 35 skill indicators plus domain fixed effects, within each stratum; HC1 standard errors. Midpoint of posted range; hourly x 2080, monthly x 12, weekly x 52; kept if $20k-$1M.",
+    "limitations": [
+      "Posted ranges, not realised pay",
+      "Salary is missing for part of the corpus (coverage reported per stratum)",
+      "Federal pay is set by GS grade, so USAJobs premiums partly reflect grade composition"
+    ]
+  },
+  "occupations": {
+    "rule": "Job titles grouped into families by ordered keyword rules (as in the Nov 22 notebook)",
+    "limitation": "No SOC codes; SCI/OCI depend on this grouping. SOC mapping is listed as future work."
+  },
+  "amendments": [
+    {
+      "n": 1,
+      "date_utc": "2026-11-24T01:03:58Z",
+      "before_results": true,
+      "change": "Clean labels now use mapper v4 (onet_map_v4.py): (a) every trigger must start at a word boundary; acronym and name triggers (any capital letter, or 3 characters or fewer) must also end at one; (b) trigger fixes: Programming 'develop' -> 'develop software', 'software developer', 'application development', 'develop applications', 'develop code'; 'Go' -> 'Golang'; Instructing 'train' -> 'train staff', 'train employees', 'train users', 'train new', 'provide training', 'conduct training', 'deliver training', 'trainer'; Instructing 'SME' removed; Reading Comprehension 'parse' removed.",
+      "reason": "Reviewing the full trigger list before running any test showed the frozen start-of-word rule still matched 'Scala' inside 'scalable', and that 'develop', 'Go', 'train', 'SME' and 'parse' fire on unrelated common senses in this corpus (develop budgets, government, train models, subject-matter expert, parse data). The same v4 dictionary is applied in the collection pipeline going forward.",
+      "corpus_sha256_new": "1489b5181e97f6b9fe52491dcc8e5d61383387ab1fa30cc16d8a7e5ce1583288",
+      "postings_by_stratum_and_domain_clean_labels_new": {
+        "Jooble|AI": 13010,
+        "Jooble|CS": 14573,
+        "Jooble|DATA_ANALYTICS": 8820,
+        "Jooble|MBA": 10038,
+        "USAJobs|AI": 326,
+        "USAJobs|CS": 2787,
+        "USAJobs|DATA_ANALYTICS": 805,
+        "USAJobs|MBA": 3301
+      }
+    }
+  ]
+}
